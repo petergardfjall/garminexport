@@ -10,26 +10,26 @@ assumes that you have [Python 2.7](https://www.python.org/download/releases/2.7/
 [pip](http://pip.readthedocs.org/en/latest/installing.html), and [virtualenv](http://virtualenv.readthedocs.org/en/latest/virtualenv.html#installation) installed.
 
 It also assumes that you have registered an account at 
-[Garmin Connect](http://connect.garmin.com/)
+[Garmin Connect](http://connect.garmin.com/).
 
 Getting started
 ===============
 Create and activate a new virtual environment to create an isolated development
 environment (that contains the required dependencies and nothing else).
 
-    `virtualenv venv.garminexport`
-    `. venv.garminexport/bin/activate`
+    virtualenv venv.garminexport
+    . venv.garminexport/bin/activate
 
 Install the required dependencies in this virtual environment:
 
-    `pip install -r requirements.txt`
+    pip install -r requirements.txt
 
 Run the program
 ===============
 The program is run as follows (use the ``--help`` flag for a list of
 available options).
 
-    `./garminexport.py <username or email>`
+    ./garminexport.py <username or email>
 
 Once started, the program will prompt you for your account password and then
 log in to your Garmin Connect account to download all activities to a destination
