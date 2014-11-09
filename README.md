@@ -37,15 +37,16 @@ directory on your machine.
 
 For each activity, these files are stored: 
 
-    - an activity summary file (JSON)
+  -   an activity summary file (JSON)
     
-    - an activity details file (JSON)
+  -   an activity details file (JSON)
 
-    - an activity GPX file (XML)
+  -   an activity GPX file (XML)
 
-    - an activity TCX file (XML)
+  -   an activity TCX file (XML)
 
-    - an activity FIT file (binary)
+  -   an activity FIT file (binary) (if available -- the activity may have
+      been entered manuall rather than imported from a Garmin device).
 
 All files are written to the same directory (``activities/<timestamp>/`` 
 by default). Each activity file is prefixed by its upload timestamp and its 

@@ -92,8 +92,9 @@ if __name__ == "__main__":
                     f.write(activity_gpx)
                 with codecs.open(tcx_file, encoding="utf-8", mode="w") as f:
                     f.write(activity_tcx)
-                with open(fit_file, mode="wb") as f:
-                    f.write(activity_fit)
+                if activity_fit:
+                    with open(fit_file, mode="wb") as f:
+                        f.write(activity_fit)
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         log.error(u"failed with exception: %s", e)

@@ -262,22 +262,30 @@ class GarminClient(object):
         :returns: The TCX representation of the activity as an XML string.
         :rtype: str
         """
-        response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.3/tcx/course/{}".format(activity_id))
+        
+        response = self.session.get("http://connect.garmin.com/proxy/activity-service-1.1/tcx/activity/{}?full=true".format(activity_id))
         if response.status_code != 200:
             raise Exception(u"failed to fetch TCX for activity {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))        
         return response.text
 
     def get_activity_fit(self, activity_id):
-        """Return a FIT representation for a given activity.
+        """Return a FIT representation for a given activity. If the activity
+        doesn't have a FIT source (for example, if it was entered manually
+        rather than imported from a Garmin device) a :obj:`None` value is
+        returned.
 
         :param activity_id: Activity identifier.
         :type activity_id: int
-        :returns: A string with a FIT file for the activity.
+        :returns: A string with a FIT file for the activity or :obj:`None`
+          if no FIT source exists for this activity (e.g., entered manually).
         :rtype: str
         """
         
         response = self.session.get("https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
+        if response.status_code == 404:
+            # No FIT source available for activity
+            return None
         if response.status_code != 200:
             raise Exception(u"failed to fetch FIT for activity {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
