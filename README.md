@@ -46,7 +46,7 @@ For each activity, these files are stored:
   -   an activity TCX file (XML)
 
   -   an activity FIT file (binary) (if available -- the activity may have
-      been entered manuall rather than imported from a Garmin device).
+      been entered manually rather than imported from a Garmin device).
 
 All files are written to the same directory (``activities/<timestamp>/`` 
 by default). Each activity file is prefixed by its upload timestamp and its 
