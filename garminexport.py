@@ -67,7 +67,9 @@ if __name__ == "__main__":
                 activity_summary = client.get_activity_summary(id)
                 activity_details = client.get_activity_details(id)
                 activity_gpx = client.get_activity_gpx(id)
-
+                activity_tcx = client.get_activity_tcx(id)
+                activity_fit = client.get_activity_fit(id)
+                
                 # for each activitity save the summary, details and GPX file.
                 creation_millis = activity_summary["activity"]["uploadDate"]["millis"]
                 timestamp = datetime.fromtimestamp(int(creation_millis)/1000.0)
@@ -78,6 +80,8 @@ if __name__ == "__main__":
                 summary_file = path_prefix + "_summary.json"
                 details_file = path_prefix + "_details.json"
                 gpx_file = path_prefix + ".gpx"
+                tcx_file = path_prefix + ".tcx"
+                fit_file = path_prefix + ".fit"
                 with codecs.open(summary_file, encoding="utf-8", mode="w") as f:
                     f.write(json.dumps(
                         activity_summary, ensure_ascii=False, indent=4))
@@ -85,7 +89,11 @@ if __name__ == "__main__":
                     f.write(json.dumps(
                         activity_details, ensure_ascii=False, indent=4))
                 with codecs.open(gpx_file, encoding="utf-8", mode="w") as f:
-                    f.write(activity_gpx)                
+                    f.write(activity_gpx)
+                with codecs.open(tcx_file, encoding="utf-8", mode="w") as f:
+                    f.write(activity_tcx)
+                with open(fit_file, mode="wb") as f:
+                    f.write(activity_fit)
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         log.error(u"failed with exception: %s", e)

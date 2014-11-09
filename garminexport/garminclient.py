@@ -7,7 +7,9 @@ import json
 import logging
 import re
 import requests
+from StringIO import StringIO
 import sys
+import zipfile
 
 #
 # Note: For more detailed information about the API services
@@ -250,3 +252,37 @@ class GarminClient(object):
                 activity_id, response.status_code, response.text))        
         return response.text
 
+
+    def get_activity_tcx(self, activity_id):
+        """Return a TCX (Training Center XML) representation of a
+        given activity.
+
+        :param activity_id: Activity identifier.
+        :type activity_id: int
+        :returns: The TCX representation of the activity as an XML string.
+        :rtype: str
+        """
+        response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.3/tcx/course/{}".format(activity_id))
+        if response.status_code != 200:
+            raise Exception(u"failed to fetch TCX for activity {}: {}\n{}".format(
+                activity_id, response.status_code, response.text))        
+        return response.text
+
+    def get_activity_fit(self, activity_id):
+        """Return a FIT representation for a given activity.
+
+        :param activity_id: Activity identifier.
+        :type activity_id: int
+        :returns: A string with a FIT file for the activity.
+        :rtype: str
+        """
+        
+        response = self.session.get("https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
+        if response.status_code != 200:
+            raise Exception(u"failed to fetch FIT for activity {}: {}\n{}".format(
+                activity_id, response.status_code, response.text))
+        # fit file returned from server is in a zip archive
+        zipped_fit_file = response.content
+        zip = zipfile.ZipFile(StringIO(zipped_fit_file), mode="r")
+        # return the "<activity-id>.fit" entry from the zip archive
+        return zip.open(str(activity_id) + ".fit").read()

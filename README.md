@@ -35,10 +35,21 @@ Once started, the program will prompt you for your account password and then
 log in to your Garmin Connect account to download all activities to a destination
 directory on your machine.
 
-For each activity, three files are stored: an activity summary (JSON),
-activity details (JSON) and the activity GPX file. All files are written
-to the same directory (``activities/<timestamp>/`` by default).
-Each activity file is prefixed by its upload timestamp and its activity id.
+For each activity, these files are stored: 
+
+    - an activity summary file (JSON)
+    
+    - an activity details file (JSON)
+
+    - an activity GPX file (XML)
+
+    - an activity TCX file (XML)
+
+    - an activity FIT file (binary)
+
+All files are written to the same directory (``activities/<timestamp>/`` 
+by default). Each activity file is prefixed by its upload timestamp and its 
+activity id.
 
 
 Library import
