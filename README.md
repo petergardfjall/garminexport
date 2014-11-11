@@ -1,11 +1,12 @@
-garminexport
-============
+Garmin Connect activity exporter
+================================
 ``garminexport.py`` is a program that downloads *all* 
 activities for a given [Garmin Connect](http://connect.garmin.com/) 
-account and stores them locally on the user's computer.
+account and stores them in a backup directory locally on the user's 
+computer.
 
-The directory also contains an ``incremental_backup.py`` program that can be
-used for incremental backups of your account. This script only downloads
+The ``incremental_backup.py`` program can be used for incremental backups
+ of your account. This script only downloads
 activities that haven't already been downloaded to a certain backup directory.
 It is typically a quicker alternative (except for the first time when all
 activities will need to be downloaded).
