@@ -3,15 +3,11 @@
 and stores them locally on the user's computer.
 """
 import argparse
-import codecs
-from datetime import datetime
 import getpass
 from garminexport.garminclient import GarminClient
-import io
-import json
+import garminexport.util
 import logging
 import os
-import shutil
 import sys
 import traceback
 
@@ -53,7 +49,9 @@ if __name__ == "__main__":
     logging.root.setLevel(LOG_LEVELS[args.log_level])
         
     try:
-        os.makedirs(args.destination)
+        if not os.path.isdir(args.destination):
+            os.makedirs(args.destination)
+
         if not args.password:
             args.password = getpass.getpass("Enter password: ")
         
@@ -61,39 +59,10 @@ if __name__ == "__main__":
             log.info("fetching activities for {} ...".format(args.username))
             activity_ids = client.list_activity_ids()
             for index, id in enumerate(activity_ids):
-                log.info("processing activity {} out of {} ...".format(
-                    index+1, len(activity_ids)))
-                activity_summary = client.get_activity_summary(id)
-                activity_details = client.get_activity_details(id)
-                activity_gpx = client.get_activity_gpx(id)
-                activity_tcx = client.get_activity_tcx(id)
-                activity_fit = client.get_activity_fit(id)
-                
-                # for each activitity save the summary, details and GPX file.
-                creation_millis = activity_summary["activity"]["uploadDate"]["millis"]
-                timestamp = datetime.fromtimestamp(int(creation_millis)/1000.0)
-                filename_prefix = "{}_{}".format(
-                    timestamp.strftime("%Y%m%d-%H%M%S"), id)
-                path_prefix = os.path.join(args.destination, filename_prefix)
-                
-                summary_file = path_prefix + "_summary.json"
-                details_file = path_prefix + "_details.json"
-                gpx_file = path_prefix + ".gpx"
-                tcx_file = path_prefix + ".tcx"
-                fit_file = path_prefix + ".fit"
-                with codecs.open(summary_file, encoding="utf-8", mode="w") as f:
-                    f.write(json.dumps(
-                        activity_summary, ensure_ascii=False, indent=4))
-                with codecs.open(details_file, encoding="utf-8", mode="w") as f:
-                    f.write(json.dumps(
-                        activity_details, ensure_ascii=False, indent=4))
-                with codecs.open(gpx_file, encoding="utf-8", mode="w") as f:
-                    f.write(activity_gpx)
-                with codecs.open(tcx_file, encoding="utf-8", mode="w") as f:
-                    f.write(activity_tcx)
-                if activity_fit:
-                    with open(fit_file, mode="wb") as f:
-                        f.write(activity_fit)
+                log.info("processing activity {} ({} out of {}) ...".format(
+                    id, index+1, len(activity_ids)))
+                garminexport.util.save_activity(
+                    client, id, args.destination)
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         log.error(u"failed with exception: %s", e)

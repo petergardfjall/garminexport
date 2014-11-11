@@ -180,7 +180,8 @@ class GarminClient(object):
         :returns: A list of activity identifiers.
         :rtype: list of str
         """
-        log.info("fetching activities {} through {} ...".format(start_index, start_index+max_limit-1))
+        log.debug("fetching activities {} through {} ...".format(
+            start_index, start_index+max_limit-1))
         response = self.session.get(
             "https://connect.garmin.com/proxy/activity-search-service-1.2/json/activities", params={"start": start_index, "limit": max_limit})
         if response.status_code != 200:
@@ -292,5 +293,5 @@ class GarminClient(object):
         # fit file returned from server is in a zip archive
         zipped_fit_file = response.content
         zip = zipfile.ZipFile(StringIO(zipped_fit_file), mode="r")
-        # return the "<activity-id>.fit" entry from the zip archive
+        # return the "<activity-activity_id>.fit" entry from the zip archive
         return zip.open(str(activity_id) + ".fit").read()
