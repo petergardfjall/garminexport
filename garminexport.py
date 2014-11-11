@@ -40,9 +40,8 @@ if __name__ == "__main__":
         "--password", type=str, help="Account password.")
     parser.add_argument(
         "--destination", metavar="DIR", type=str,
-        help=("Destination directory for downloaded activities. "
-              "Default: ./activities/<timestamp>/"),
-        default=os.path.join(".", "activities", datetime.now().isoformat()))
+        help=("Destination directory for downloaded activities. Default: "
+              "./activities/"), default=os.path.join(".", "activities"))
     parser.add_argument(
         "--log-level", metavar="LEVEL", type=str,
         help=("Desired log output level (DEBUG, INFO, WARNING, ERROR). "

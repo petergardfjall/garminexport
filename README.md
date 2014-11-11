@@ -48,8 +48,8 @@ For each activity, these files are stored:
   -   an activity FIT file (binary) (if available -- the activity may have
       been entered manually rather than imported from a Garmin device).
 
-All files are written to the same directory (``activities/<timestamp>/`` 
-by default). Each activity file is prefixed by its upload timestamp and its 
+All files are written to the same directory (``activities/`` by default).
+Each activity file is prefixed by its upload timestamp and its 
 activity id.
 
 
