@@ -1,6 +1,6 @@
 garminexport
 ============
-The Garmin Connect activity exporter is a program that downloads *all* 
+``garminexport.py`` is a program that downloads *all* 
 activities for a given [Garmin Connect](http://connect.garmin.com/) 
 account and stores them locally on the user's computer.
 
