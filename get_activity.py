@@ -23,7 +23,6 @@ LOG_LEVELS = {
 }
 """Command-line (string-based) log-level mapping to logging module levels."""
 
-
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(
@@ -34,6 +33,10 @@ if __name__ == "__main__":
         "username", metavar="<username>", type=str, help="Account user name.")
     parser.add_argument(
         "activity", metavar="<activity>", type=int, help="Activity ID.")
+    parser.add_argument(
+        "format", metavar="<format>", type=str,
+        help="Export format (one of: {}).".format(
+            garminexport.util.export_formats))
 
     # optional args
     parser.add_argument(
@@ -49,7 +52,12 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     if not args.log_level in LOG_LEVELS:
-        raise ValueError("Illegal log-level argument: {}".format(args.log_level))
+        raise ValueError("Illegal log-level argument: {}".format(
+            args.log_level))
+    if not args.format in garminexport.util.export_formats:
+        raise ValueError(
+            "Uncrecognized export format: '{}'. Must be one of {}".format(
+                args.format, garminexport.util.export_formats))
     logging.root.setLevel(LOG_LEVELS[args.log_level])
         
     try:
@@ -58,11 +66,10 @@ if __name__ == "__main__":
 
         if not args.password:
             args.password = getpass.getpass("Enter password: ")
-        
         with GarminClient(args.username, args.password) as client:
             log.info("fetching activity {} ...".format(args.activity))
-            garminexport.util.save_activity(
-                client, args.activity, args.destination)
+            garminexport.util.export_activity(
+                client, args.activity, args.destination, formats=[args.format])
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         log.error(u"failed with exception: %s", e)

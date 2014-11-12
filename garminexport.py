@@ -61,7 +61,7 @@ if __name__ == "__main__":
             for index, id in enumerate(activity_ids):
                 log.info("processing activity {} ({} out of {}) ...".format(
                     id, index+1, len(activity_ids)))
-                garminexport.util.save_activity(
+                garminexport.util.export_activity(
                     client, id, args.destination)
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()

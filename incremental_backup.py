@@ -99,7 +99,7 @@ if __name__ == "__main__":
             for index, id in enumerate(missing_activities):
                 log.info("backing up activity {} ({} out of {}) ...".format(
                     id, index+1, len(missing_activities)))
-                garminexport.util.save_activity(
+                garminexport.util.export_activity(
                     client, id, args.backup_dir)
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
