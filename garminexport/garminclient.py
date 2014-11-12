@@ -264,7 +264,7 @@ class GarminClient(object):
         :rtype: str
         """
         
-        response = self.session.get("http://connect.garmin.com/proxy/activity-service-1.1/tcx/activity/{}?full=true".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.1/tcx/activity/{}?full=true".format(activity_id))
         if response.status_code != 200:
             raise Exception(u"failed to fetch TCX for activity {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))        
