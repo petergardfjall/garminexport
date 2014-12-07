@@ -4,6 +4,7 @@
 import codecs
 import json
 from datetime import datetime
+import dateutil.parser
 import os
 
 export_formats=["json_summary", "json_details", "gpx", "tcx", "fit"]
@@ -31,10 +32,9 @@ def export_activity(client, activity_id, destination,
     activity_summary = client.get_activity_summary(activity_id)
     
     # prefix saved activity files with timestamp and activity id
-    creation_millis = activity_summary["activity"]["uploadDate"]["millis"]
-    timestamp = datetime.fromtimestamp(int(creation_millis)/1000.0)
-    filename_prefix = "{}_{}".format(
-        timestamp.strftime("%Y%m%d-%H%M%S"), activity_id)
+    start = activity_summary["activity"]["activitySummary"]["BeginTimestamp"]["value"]
+    timestamp = dateutil.parser.parse(start)
+    filename_prefix = "{}_{}".format(timestamp.isoformat(), activity_id)
     path_prefix = os.path.join(destination, filename_prefix)
     
     if 'json_summary' in formats:
