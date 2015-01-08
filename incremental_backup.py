@@ -33,8 +33,8 @@ def get_backed_up_ids(backup_dir):
 
     :rtype: list of int
     """
-    # backed up activities follow this pattern
-    activity_file_pattern = r'[0-9]+\-[0-9]+_([0-9]+)_summary\.json'
+    # backed up activities follow this pattern: <ISO8601>_<id>_summary.json
+    activity_file_pattern = r'[\d:T\+\-]+_([0-9]+)_summary\.json'
     
     backed_up_ids = []
     dir_entries = os.listdir(backup_dir)
