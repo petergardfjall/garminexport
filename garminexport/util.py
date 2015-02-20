@@ -28,7 +28,7 @@ def export_activity(client, activity_id, destination,
     :type formats: list of str
     """
     if formats is None:
-        formats = ['json_summary', 'json_details', 'gpx', 'tcx', 'fit']
+        formats = export_formats
     activity_summary = client.get_activity_summary(activity_id)
     
     # prefix saved activity files with timestamp and activity id

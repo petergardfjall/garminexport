@@ -30,11 +30,11 @@ if __name__ == "__main__":
     try:
         with GarminClient(args.username, args.password) as client:
             log.info("activities:")
-            activity_ids = client.list_activity_ids()
+            activity_ids = client.list_activities()
             log.info("num ids: {}".format(len(activity_ids)))
             log.info(activity_ids)
 
-            latest_activity = activity_ids[0]
+            latest_activity, latest_activity_start = activity_ids[0]
             activity = client.get_activity_summary(latest_activity)
             log.info(u"activity id: %s", activity["activity"]["activityId"])
             log.info(u"activity name: '%s'", activity["activity"]["activityName"])
