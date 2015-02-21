@@ -33,9 +33,7 @@ def get_backed_up(activities, backup_dir, formats):
 
     :rtype: list of int
     """
-    # backed up activities follow this pattern: <ISO8601>_<id>_summary.json
-    activity_file_pattern = r'[\d:T\+\-]+_([0-9]+).tcx'
-
+    # backed up activities follow this pattern: <ISO8601>_<id>_<suffix>
     format_suffix = dict(json_summary="_summary.json", json_details="_details.json", gpx=".gpx", tcx=".tcx", fit=".fit")
     
     backed_up = set()
