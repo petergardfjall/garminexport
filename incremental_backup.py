@@ -33,16 +33,17 @@ def get_backed_up(activities, backup_dir, formats):
 
     :rtype: list of int
     """
-    # backed up activities follow this pattern: <ISO8601>_<id>_summary.json
-    activity_file_pattern = r'[\d:T\+\-]+_([0-9]+).tcx'
-
     format_suffix = dict(json_summary="_summary.json", json_details="_details.json", gpx=".gpx", tcx=".tcx", fit=".fit")
+    stat_formats = [f for f in formats if f!='fit']
     
     backed_up = set()
     dir_entries = os.listdir(backup_dir)
-    for id, start in activities:
-        if all( "{}_{}{}".format(start.isoformat(), id, format_suffix[f]) in dir_entries for f in formats):
-            backed_up.add((id, start))
+    for t in activities:
+        id, start, stat = t
+        fs = stat_formats if stat else formats
+        if all( "{}_{}{}".format(start.isoformat(), id, format_suffix[f]) in dir_entries for f in fs ):
+            backed_up.add(t)
+
     return backed_up
 
 
@@ -104,7 +105,7 @@ if __name__ == "__main__":
             log.info("activities that haven't been backed up: {}".format(
                 len(missing_activities)))
             
-            for index, (id, start) in enumerate(missing_activities):
+            for index, (id, start, stat) in enumerate(missing_activities):
                 log.info("backing up activity {} from {} ({} out of {}) ...".format(
                     id, start, index+1, len(missing_activities)))
                 try:

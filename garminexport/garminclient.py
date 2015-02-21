@@ -160,15 +160,15 @@ class GarminClient(object):
         # fetch in batches since the API doesn't allow more than a certain
         # number of activities to be retrieved on every invocation
         for start_index in xrange(0, sys.maxint, batch_size):
-            next_batch = self._fetch_activity_ids_and_ts(start_index, batch_size)
+            next_batch = self._fetch_activities(start_index, batch_size)
             if not next_batch:
                 break
             ids.extend(next_batch)
         return ids
 
     @require_session
-    def _fetch_activity_ids_and_ts(self, start_index, max_limit=100):
-        """Return a sequence of activity ids starting at a given index,
+    def _fetch_activities(self, start_index, max_limit=100):
+        """Return a sequence of activity info starting at a given index,
         with index 0 being the user's most recently registered activity.
 
         Should the index be out of bounds or the account empty, an empty
@@ -179,8 +179,8 @@ class GarminClient(object):
         :param max_limit: The (maximum) number of activities to retrieve.     
         :type max_limit: int
         
-        :returns: A list of activity identifiers.
-        :rtype: list of str
+        :returns: A list of activity identifiers, timestamps, and stationary flags (indicates no GPS/time track)
+        :rtype: list of (int, datetime, bool) tuples
         """
         log.debug("fetching activities {} through {} ...".format(
             start_index, start_index+max_limit-1))
@@ -197,7 +197,9 @@ class GarminClient(object):
             return []
 
         entries = [ (int(entry["activity"]["activityId"]),
-                     dateutil.parser.parse(entry["activity"]["activitySummary"]["BeginTimestamp"]["value"]))
+                     dateutil.parser.parse(entry["activity"]["activitySummary"]["BeginTimestamp"]["value"]),
+                     # https://github.com/cpfair/tapiriik/blob/master/tapiriik/services/GarminConnect/garminconnect.py#L292
+                     "SumSampleCountSpeed" not in entry["activity"]["activitySummary"] and "SumSampleCountTimestamp" not in entry["activity"]["activitySummary"])
                     for entry in results["activities"] ]
         log.debug("got {} activities.".format(len(entries)))
         return entries
@@ -298,5 +300,6 @@ class GarminClient(object):
         # fit file returned from server is in a zip archive
         zipped_fit_file = response.content
         zip = zipfile.ZipFile(StringIO(zipped_fit_file), mode="r")
-        # return the "<activity-activity_id>.fit" entry from the zip archive
-        return zip.open(str(activity_id) + ".fit").read()
+        # return the "<activity-activity_id>.fit" entry from the zip archive -- if it exists
+        actfn = str(activity_id) + ".fit"
+        return zip.open(actfn).read() if actfn in zip.namelist() else None

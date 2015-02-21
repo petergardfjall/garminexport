@@ -34,7 +34,7 @@ if __name__ == "__main__":
             log.info("num ids: {}".format(len(activity_ids)))
             log.info(activity_ids)
 
-            latest_activity, latest_activity_start = activity_ids[0]
+            latest_activity, latest_activity_start, latest_activity_stationary = activity_ids[0]
             activity = client.get_activity_summary(latest_activity)
             log.info(u"activity id: %s", activity["activity"]["activityId"])
             log.info(u"activity name: '%s'", activity["activity"]["activityName"])

@@ -66,7 +66,7 @@ if __name__ == "__main__":
         with GarminClient(args.username, args.password) as client:
             log.info("fetching activities for {} ...".format(args.username))
             all_activities = client.list_activities()
-            for index, (id, start) in enumerate(activity_ids):
+            for index, (id, start, stat) in enumerate(activity_ids):
                 log.info("processing activity {} from {} ({} out of {}) ...".format(
                     id, start, index+1, len(activity_ids)))
                 try:
