@@ -10,6 +10,7 @@ import requests
 from StringIO import StringIO
 import sys
 import zipfile
+import dateutil
 
 #
 # Note: For more detailed information about the API services
@@ -147,25 +148,26 @@ class GarminClient(object):
         
         
     @require_session
-    def list_activity_ids(self):
-        """Return all activity ids stored by the logged in user.
+    def list_activities(self):
+        """Return all activity ids stored by the logged in user, along
+        with their starting timestamps.
 
         :returns: The full list of activity identifiers.
-        :rtype: list of str
+        :rtype: tuples of (int, datetime)
         """        
         ids = []
         batch_size = 100
         # fetch in batches since the API doesn't allow more than a certain
         # number of activities to be retrieved on every invocation
         for start_index in xrange(0, sys.maxint, batch_size):
-            next_batch = self._fetch_activity_ids(start_index, batch_size)
+            next_batch = self._fetch_activity_ids_and_ts(start_index, batch_size)
             if not next_batch:
                 break
             ids.extend(next_batch)
         return ids
 
     @require_session
-    def _fetch_activity_ids(self, start_index, max_limit=100):
+    def _fetch_activity_ids_and_ts(self, start_index, max_limit=100):
         """Return a sequence of activity ids starting at a given index,
         with index 0 being the user's most recently registered activity.
 
@@ -193,7 +195,10 @@ class GarminClient(object):
         if not "activities" in results:
             # index out of bounds or empty account
             return []
-        entries = [int(entry["activity"]["activityId"]) for entry in results["activities"]]
+
+        entries = [ (int(entry["activity"]["activityId"]),
+                     dateutil.parser.parse(entry["activity"]["activitySummary"]["BeginTimestamp"]["value"]))
+                    for entry in results["activities"] ]
         log.debug("got {} activities.".format(len(entries)))
         return entries
                
