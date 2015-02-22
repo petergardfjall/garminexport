@@ -11,7 +11,8 @@ import requests
 from StringIO import StringIO
 import sys
 import zipfile
-import dateutil
+import dateutil.parser
+from functools import wraps
 
 #
 # Note: For more detailed information about the API services
@@ -38,6 +39,7 @@ def require_session(client_function):
     """Decorator that is used to annotate :class:`GarminClient`
     methods that need an authenticated session before being called.
     """
+    @wraps(client_function)
     def check_session(*args, **kwargs):
         client_object = args[0]
         if not client_object.session:
@@ -269,6 +271,7 @@ class GarminClient(object):
         return response.text
 
 
+    @require_session
     def get_activity_tcx(self, activity_id):
         """Return a TCX (Training Center XML) representation of a
         given activity. If the activity doesn't have a TCX source (for
