@@ -35,7 +35,7 @@ def get_backed_up(activities, backup_dir, formats):
     """
     format_suffix = dict(json_summary="_summary.json", json_details="_details.json", gpx=".gpx", tcx=".tcx", fit=".fit")
     stat_formats = [f for f in formats if f!='fit']
-    
+
     backed_up = set()
     dir_entries = os.listdir(backup_dir)
     for t in activities:
@@ -76,26 +76,26 @@ if __name__ == "__main__":
     parser.add_argument(
         "-E", "--ignore-errors", action='store_true',
         help="Ignore errors and keep going. Default: FALSE")
-    
+
     args = parser.parse_args()
     if not args.log_level in LOG_LEVELS:
         raise ValueError("Illegal log-level argument: {}".format(args.log_level))
     logging.root.setLevel(LOG_LEVELS[args.log_level])
-        
+
     try:
         if not os.path.isdir(args.backup_dir):
             os.makedirs(args.backup_dir)
-            
+
         if not args.password:
             args.password = getpass.getpass("Enter password: ")
-        
+
         with GarminClient(args.username, args.password) as client:
             # get all activity ids and timestamps from Garmin account
             log.info("retrieving activities for {} ...".format(args.username))
             all_activities = set(client.list_activities())
             log.info("account has a total of {} activities.".format(
                 len(all_activities)))
-            
+
             # get already backed up activities (stored in backup-dir)
             backed_up_activities = get_backed_up(all_activities, args.backup_dir, args.format)
             log.info("{} contains {} backed up activities.".format(
@@ -104,7 +104,7 @@ if __name__ == "__main__":
             missing_activities = all_activities - backed_up_activities
             log.info("activities that haven't been backed up: {}".format(
                 len(missing_activities)))
-            
+
             for index, (id, start, stat) in enumerate(missing_activities):
                 log.info("backing up activity {} from {} ({} out of {}) ...".format(
                     id, start, index+1, len(missing_activities)))
