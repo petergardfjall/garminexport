@@ -12,6 +12,7 @@ from StringIO import StringIO
 import sys
 import zipfile
 import dateutil
+import os.path
 
 #
 # Note: For more detailed information about the API services
@@ -341,3 +342,63 @@ class GarminClient(object):
         # and cannot be exported to fit
         return orig_file if fmt=='fit' else None
 
+    @require_session
+    def upload_activity(self, file, format=None, name=None, description=None, activity_type=None, private=None):
+        """Upload a GPX, TCX, or FIT file for an activity.
+
+        :param file: Path or open file
+        :param format: File format (gpx, tcx, or fit); guessed from filename if None
+        :param name: Optional name for the activity on Garmin Connect
+        :param description: Optional description for the activity on Garmin Connect
+        :param activity_type: Optional activityType key (lowercase: e.g. running, cycling)
+        :param private: If true, then activity will be set as private.
+        :returns: ID of the newly-uploaded activity
+        :rtype: int
+        """
+
+        if isinstance(file, basestring):
+            file = open(file, "rb")
+
+        # guess file type if unspecified
+        fn = os.path.basename(file.name)
+        _, ext = os.path.splitext(fn)
+        if format is None:
+            if ext.lower() in ('.gpx','.tcx','.fit'):
+                format = ext.lower()[1:]
+            else:
+                raise Exception(u"could not guess file type for {}".format(fn))
+
+        # upload it
+        files = dict(data=(fn, file))
+        response = self.session.post("https://connect.garmin.com/proxy/upload-service-1.1/json/upload/.{}".format(format),
+                                     files=files)
+
+        # check response and get activity ID
+        if response.status_code != 200:
+            raise Exception(u"failed to upload {} for activity: {}\n{}".format(
+                format, response.status_code, response.text))
+
+        j = response.json()
+        if len(j["detailedImportResult"]["failures"]) or len(j["detailedImportResult"]["successes"])!=1:
+            raise Exception(u"failed to upload {} for activity")
+        activity_id = j["detailedImportResult"]["successes"][0]["internalId"]
+
+        # add optional fields
+        fields = ( ('name',name,("display","value")),
+                   ('description',description,("display","value")),
+                   ('type',activity_type,("activityType","key")),
+                   ('privacy','private' if private else None,("definition","key")) )
+        for endpoint, value, path in fields:
+            if value is not None:
+                response = self.session.post("https://connect.garmin.com/proxy/activity-service-1.2/json/{}/{}".format(endpoint, activity_id),
+                                             data={'value':value})
+                if response.status_code != 200:
+                    raise Exception(u"failed to set {} for activity {}: {}\n{}".format(
+                        endpoint, activity_id, response.status_code, response.text))
+
+                j = response.json()
+                p0, p1 = path
+                if p0 not in j or j[p0][p1] != value:
+                    raise Exception(u"failed to set {} for activity {}\n".format(endpoint, activity_id))
+
+        return activity_id
