@@ -160,15 +160,15 @@ class GarminClient(object):
         # fetch in batches since the API doesn't allow more than a certain
         # number of activities to be retrieved on every invocation
         for start_index in xrange(0, sys.maxint, batch_size):
-            next_batch = self._fetch_activity_ids_and_ts(start_index, batch_size)
+            next_batch = self._fetch_activities(start_index, batch_size)
             if not next_batch:
                 break
             ids.extend(next_batch)
         return ids
 
     @require_session
-    def _fetch_activity_ids_and_ts(self, start_index, max_limit=100):
-        """Return a sequence of activity ids starting at a given index,
+    def _fetch_activities(self, start_index, max_limit=100):
+        """Return a sequence of activity info starting at a given index,
         with index 0 being the user's most recently registered activity.
 
         Should the index be out of bounds or the account empty, an empty
@@ -179,8 +179,8 @@ class GarminClient(object):
         :param max_limit: The (maximum) number of activities to retrieve.     
         :type max_limit: int
         
-        :returns: A list of activity identifiers.
-        :rtype: list of str
+        :returns: A list of activity identifiers, timestamps, and stationary flags (indicates no GPS/time track)
+        :rtype: list of (int, datetime, bool) tuples
         """
         log.debug("fetching activities {} through {} ...".format(
             start_index, start_index+max_limit-1))
@@ -197,7 +197,9 @@ class GarminClient(object):
             return []
 
         entries = [ (int(entry["activity"]["activityId"]),
-                     dateutil.parser.parse(entry["activity"]["activitySummary"]["BeginTimestamp"]["value"]))
+                     dateutil.parser.parse(entry["activity"]["activitySummary"]["BeginTimestamp"]["value"]),
+                     # https://github.com/cpfair/tapiriik/blob/master/tapiriik/services/GarminConnect/garminconnect.py#L292
+                     "SumSampleCountSpeed" not in entry["activity"]["activitySummary"] and "SumSampleCountTimestamp" not in entry["activity"]["activitySummary"])
                     for entry in results["activities"] ]
         log.debug("got {} activities.".format(len(entries)))
         return entries
@@ -275,6 +277,36 @@ class GarminClient(object):
                 activity_id, response.status_code, response.text))        
         return response.text
 
+    def get_activity_orig(self, activity_id):
+        """Return the original file that was uploaded for an activity.
+        If the  activity doesn't have any file source (for example,
+        if it was entered manually rather than imported from a Garmin
+        device) then :obj:`(None,None)` is returned.
+
+        :param activity_id: Activity identifier.
+        :type activity_id: int
+        :returns: A tuple of the file type (e.g. 'fit', 'tcx', 'gpx') and
+          its contents, or :obj:`(None,None)` if no file is found.
+        :rtype: (str, str)
+
+        """
+        response = self.session.get("https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
+        if response.status_code == 404:
+            # No file source available for activity
+            return (None,None)
+        if response.status_code != 200:
+            raise Exception(u"failed to fetch FIT for activity {}: {}\n{}".format(
+                activity_id, response.status_code, response.text))
+
+        # return the first entry from the zip archive where the filename is activity_id (should be the only entry!)
+        zip = zipfile.ZipFile(StringIO(response.content), mode="r")
+        for path in zip.namelist():
+            fn, ext = os.path.splitext(path)
+            if fn==str(activity_id):
+                return ext[1:], zip.open(path).read()
+        return (None,None)
+
+    @require_session
     def get_activity_fit(self, activity_id):
         """Return a FIT representation for a given activity. If the activity
         doesn't have a FIT source (for example, if it was entered manually
@@ -287,16 +319,6 @@ class GarminClient(object):
           if no FIT source exists for this activity (e.g., entered manually).
         :rtype: str
         """
-        
-        response = self.session.get("https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
-        if response.status_code == 404:
-            # No FIT source available for activity
-            return None
-        if response.status_code != 200:
-            raise Exception(u"failed to fetch FIT for activity {}: {}\n{}".format(
-                activity_id, response.status_code, response.text))
-        # fit file returned from server is in a zip archive
-        zipped_fit_file = response.content
-        zip = zipfile.ZipFile(StringIO(zipped_fit_file), mode="r")
-        # return the "<activity-activity_id>.fit" entry from the zip archive
-        return zip.open(str(activity_id) + ".fit").read()
+
+        fmt, orig_file = self.get_activity_orig(activity_id)
+        return orig_file if fmt=='fit' else None
