@@ -277,6 +277,36 @@ class GarminClient(object):
                 activity_id, response.status_code, response.text))        
         return response.text
 
+    def get_activity_orig(self, activity_id):
+        """Return the original file that was uploaded for an activity.
+        If the  activity doesn't have any file source (for example,
+        if it was entered manually rather than imported from a Garmin
+        device) then :obj:`(None,None)` is returned.
+
+        :param activity_id: Activity identifier.
+        :type activity_id: int
+        :returns: A tuple of the file type (e.g. 'fit', 'tcx', 'gpx') and
+          its contents, or :obj:`(None,None)` if no file is found.
+        :rtype: (str, str)
+
+        """
+        response = self.session.get("https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
+        if response.status_code == 404:
+            # No file source available for activity
+            return (None,None)
+        if response.status_code != 200:
+            raise Exception(u"failed to fetch FIT for activity {}: {}\n{}".format(
+                activity_id, response.status_code, response.text))
+
+        # return the first entry from the zip archive where the filename is activity_id (should be the only entry!)
+        zip = zipfile.ZipFile(StringIO(response.content), mode="r")
+        for path in zip.namelist():
+            fn, ext = os.path.splitext(path)
+            if fn==str(activity_id):
+                return ext[1:], zip.open(path).read()
+        return (None,None)
+
+    @require_session
     def get_activity_fit(self, activity_id):
         """Return a FIT representation for a given activity. If the activity
         doesn't have a FIT source (for example, if it was entered manually
@@ -289,17 +319,6 @@ class GarminClient(object):
           if no FIT source exists for this activity (e.g., entered manually).
         :rtype: str
         """
-        
-        response = self.session.get("https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
-        if response.status_code == 404:
-            # No FIT source available for activity
-            return None
-        if response.status_code != 200:
-            raise Exception(u"failed to fetch FIT for activity {}: {}\n{}".format(
-                activity_id, response.status_code, response.text))
-        # fit file returned from server is in a zip archive
-        zipped_fit_file = response.content
-        zip = zipfile.ZipFile(StringIO(zipped_fit_file), mode="r")
-        # return the "<activity-activity_id>.fit" entry from the zip archive -- if it exists
-        actfn = str(activity_id) + ".fit"
-        return zip.open(actfn).read() if actfn in zip.namelist() else None
+
+        fmt, orig_file = self.get_activity_orig(activity_id)
+        return orig_file if fmt=='fit' else None
