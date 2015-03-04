@@ -64,7 +64,10 @@ Supported export formats:
 
   -   ``gpx``: activity GPX file (XML)
 
-  -   ``tcx``: an activity TCX file (XML)
+  -   ``tcx``: an activity TCX file (XML).
+      *Note: a ``.tcx`` file may not always be possible to export, for example
+      if an activity was uploaded in gpx format. In that case, Garmin won't try
+      to synthesize a tcx file.*
 
   -   ``fit``: activity FIT file (binary format).
       *Note: a ``.fit`` file may not always be possible to export, for example
