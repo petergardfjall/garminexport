@@ -8,7 +8,8 @@ stored in the backup directory will be downloaded.
 import argparse
 import getpass
 from garminexport.garminclient import GarminClient
-import garminexport.util
+import garminexport.backup
+from garminexport.backup import export_formats
 import logging
 import os
 import re
@@ -27,21 +28,6 @@ LOG_LEVELS = {
 }
 """Command-line (string-based) log-level mapping to logging module levels."""
 
-def get_backed_up(activities, backup_dir, formats):
-    """Return all activity (id, ts) pairs that have been backed up in the
-    given backup directory.
-
-    :rtype: list of int
-    """
-    # backed up activities follow this pattern: <ISO8601>_<id>_<suffix>
-    format_suffix = dict(json_summary="_summary.json", json_details="_details.json", gpx=".gpx", tcx=".tcx", fit=".fit")
-    
-    backed_up = set()
-    dir_entries = os.listdir(backup_dir)
-    for id, start in activities:
-        if all( "{}_{}{}".format(start.isoformat(), id, format_suffix[f]) in dir_entries for f in formats):
-            backed_up.add((id, start))
-    return backed_up
 
 
 if __name__ == "__main__":
@@ -66,9 +52,9 @@ if __name__ == "__main__":
         help=("Desired log output level (DEBUG, INFO, WARNING, ERROR). "
               "Default: INFO."), default="INFO")
     parser.add_argument(
-        "-f", "--format", choices=garminexport.util.export_formats,
+        "-f", "--format", choices=export_formats,
         default=None, action='append',
-        help=("Desired output formats ("+', '.join(garminexport.util.export_formats)+"). "
+        help=("Desired output formats ("+', '.join(export_formats)+"). "
               "Default: ALL."))
     parser.add_argument(
         "-E", "--ignore-errors", action='store_true',
@@ -76,9 +62,14 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     if not args.log_level in LOG_LEVELS:
-        raise ValueError("Illegal log-level argument: {}".format(args.log_level))
+        raise ValueError("Illegal log-level: {}".format(args.log_level))
+
+    # if no --format was specified, all formats are to be backed up
+    args.format = args.format if args.format else export_formats
+    log.info("backing up formats: %s", ", ".join(args.format))
+    
     logging.root.setLevel(LOG_LEVELS[args.log_level])
-        
+
     try:
         if not os.path.isdir(args.backup_dir):
             os.makedirs(args.backup_dir)
@@ -89,25 +80,26 @@ if __name__ == "__main__":
         with GarminClient(args.username, args.password) as client:
             # get all activity ids and timestamps from Garmin account
             log.info("retrieving activities for {} ...".format(args.username))
-            all_activities = set(client.list_activities())
+            activities = set(client.list_activities())
             log.info("account has a total of {} activities.".format(
-                len(all_activities)))
+                len(activities)))
             
-            # get already backed up activities (stored in backup-dir)
-            backed_up_activities = get_backed_up(all_activities, args.backup_dir, args.format)
+            missing_activities = garminexport.backup.need_backup(
+                activities, args.backup_dir, args.format)
+            backed_up = activities - missing_activities
             log.info("{} contains {} backed up activities.".format(
-                args.backup_dir, len(backed_up_activities)))
+                args.backup_dir, len(backed_up)))
 
-            missing_activities = all_activities - backed_up_activities
-            log.info("activities that haven't been backed up: {}".format(
+            log.info("activities that aren't backed up: {}".format(
                 len(missing_activities)))
             
-            for index, (id, start) in enumerate(missing_activities):
-                log.info("backing up activity {} from {} ({} out of {}) ...".format(
-                    id, start, index+1, len(missing_activities)))
+            for index, activity in enumerate(missing_activities):
+                id, start = activity
+                log.info("backing up activity %d from %s (%d out of %d) ..." %
+                         (id, start, index+1, len(missing_activities)))
                 try:
-                    garminexport.util.export_activity(
-                        client, id, args.backup_dir, args.format)
+                    garminexport.backup.download(
+                        client, activity, args.backup_dir, args.format)
                 except Exception as e:
                     log.error(u"failed with exception: %s", e)
                     if not args.ignore_errors:

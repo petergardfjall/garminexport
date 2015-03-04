@@ -5,6 +5,7 @@ parts of the Garmin Connect REST API.
 
 import json
 import logging
+import os
 import re
 import requests
 from StringIO import StringIO
@@ -241,11 +242,14 @@ class GarminClient(object):
     @require_session        
     def get_activity_gpx(self, activity_id):
         """Return a GPX (GPS Exchange Format) representation of a
-        given activity.
+        given activity. If the activity cannot be exported to GPX
+        (not yet observed in practice, but that doesn't exclude the
+        possibility), a :obj:`None` value is returned.
 
         :param activity_id: Activity identifier.
         :type activity_id: int
-        :returns: The GPX representation of the activity as an XML string.
+        :returns: The GPX representation of the activity as an XML string
+          or ``None`` if the activity couldn't be exported to GPX.
         :rtype: str
         """
         response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.3/gpx/course/{}".format(activity_id))
@@ -253,6 +257,8 @@ class GarminClient(object):
         # and is the one used when exporting through the Garmin
         # Connect web page.
         #response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.1/gpx/activity/{}?full=true".format(activity_id))
+        if response.status_code == 404:
+            return None
         if response.status_code != 200:
             raise Exception(u"failed to fetch GPX for activity {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))        
@@ -261,20 +267,58 @@ class GarminClient(object):
 
     def get_activity_tcx(self, activity_id):
         """Return a TCX (Training Center XML) representation of a
-        given activity.
+        given activity. If the activity doesn't have a TCX source (for
+        example, if it was originally uploaded in GPX format, Garmin
+        won't try to synthesize a TCX file) a :obj:`None` value is
+        returned.
 
         :param activity_id: Activity identifier.
         :type activity_id: int
-        :returns: The TCX representation of the activity as an XML string.
+        :returns: The TCX representation of the activity as an XML string
+          or ``None`` if the activity cannot be exported to TCX.
         :rtype: str
         """
         
         response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.1/tcx/activity/{}?full=true".format(activity_id))
+        if response.status_code == 404:
+            return None
         if response.status_code != 200:
             raise Exception(u"failed to fetch TCX for activity {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))        
         return response.text
 
+
+    def get_original_activity(self, activity_id):
+        """Return the original file that was uploaded for an activity.
+        If the activity doesn't have any file source (for example,
+        if it was entered manually rather than imported from a Garmin
+        device) then :obj:`(None,None)` is returned.
+
+        :param activity_id: Activity identifier.
+        :type activity_id: int
+        :returns: A tuple of the file type (e.g. 'fit', 'tcx', 'gpx') and
+          its contents, or :obj:`(None,None)` if no file is found.
+        :rtype: (str, str)
+        """
+        response = self.session.get("https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
+        if response.status_code == 404:
+            # Manually entered activity, no file source available
+            return (None,None)
+        if response.status_code != 200:
+            raise Exception(
+                u"failed to get original activity file {}: {}\n{}".format(
+                activity_id, response.status_code, response.text))
+
+        # return the first entry from the zip archive where the filename is
+        # activity_id (should be the only entry!)
+        zip = zipfile.ZipFile(StringIO(response.content), mode="r")
+        for path in zip.namelist():
+            fn, ext = os.path.splitext(path)
+            if fn==str(activity_id):
+                return ext[1:], zip.open(path).read()
+        return (None,None)    
+
+        
     def get_activity_fit(self, activity_id):
         """Return a FIT representation for a given activity. If the activity
         doesn't have a FIT source (for example, if it was entered manually
@@ -287,16 +331,9 @@ class GarminClient(object):
           if no FIT source exists for this activity (e.g., entered manually).
         :rtype: str
         """
-        
-        response = self.session.get("https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
-        if response.status_code == 404:
-            # No FIT source available for activity
-            return None
-        if response.status_code != 200:
-            raise Exception(u"failed to fetch FIT for activity {}: {}\n{}".format(
-                activity_id, response.status_code, response.text))
-        # fit file returned from server is in a zip archive
-        zipped_fit_file = response.content
-        zip = zipfile.ZipFile(StringIO(zipped_fit_file), mode="r")
-        # return the "<activity-activity_id>.fit" entry from the zip archive
-        return zip.open(str(activity_id) + ".fit").read()
+        fmt, orig_file = self.get_original_activity(activity_id)
+        # if the file extension of the original activity file isn't 'fit',
+        # this activity was uploaded in a different format (e.g. gpx/tcx)
+        # and cannot be exported to fit
+        return orig_file if fmt=='fit' else None
+
