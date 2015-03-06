@@ -85,10 +85,10 @@ environment, run:
 
   `pip install -e git://github.com/petergardfjall/garminexport.git#egg=garminexport`
 
-or if you prefer to use a `requirements.txt` file, add the following line
+If you prefer to use a `requirements.txt` file, add the following line
 to your list of dependencies:
 
-  `-e -e git://github.com/petergardfjall/garminexport.git#egg=garminexport`
+  `-e git://github.com/petergardfjall/garminexport.git#egg=garminexport`
 
 and run pip with you dependency file as input:
 
