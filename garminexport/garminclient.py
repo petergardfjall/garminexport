@@ -142,10 +142,14 @@ class GarminClient(object):
     def _validate_auth_ticket(self, validation_url):
         log.debug("validating authentication ticket ...")
         response = self.session.get(validation_url, allow_redirects=True)
-        if not response.status_code == 200:
-            raise Exception(
-                u"failed to validate authentication ticket: {}:\n{}".format(
-                    response.status_code, response.text))
+        if response.status_code == 200 or response.status_code == 404:
+            # for some reason a 404 response code can also denote a
+            # successful auth ticket validation
+            return
+            
+        raise Exception(
+            u"failed to validate authentication ticket: {}:\n{}".format(
+                response.status_code, response.text))
         
         
     @require_session
