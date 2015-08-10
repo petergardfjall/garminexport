@@ -5,11 +5,12 @@ Connect account and stores it locally on the user's computer.
 import argparse
 import getpass
 from garminexport.garminclient import GarminClient
-import garminexport.util
+import garminexport.backup
 import logging
 import os
 import sys
 import traceback
+import dateutil.parser
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
@@ -36,7 +37,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "format", metavar="<format>", type=str,
         help="Export format (one of: {}).".format(
-            garminexport.util.export_formats))
+            garminexport.backup.export_formats))
 
     # optional args
     parser.add_argument(
@@ -54,10 +55,10 @@ if __name__ == "__main__":
     if not args.log_level in LOG_LEVELS:
         raise ValueError("Illegal log-level argument: {}".format(
             args.log_level))
-    if not args.format in garminexport.util.export_formats:
+    if not args.format in garminexport.backup.export_formats:
         raise ValueError(
             "Uncrecognized export format: '{}'. Must be one of {}".format(
-                args.format, garminexport.util.export_formats))
+                args.format, garminexport.backup.export_formats))
     logging.root.setLevel(LOG_LEVELS[args.log_level])
         
     try:
@@ -68,8 +69,10 @@ if __name__ == "__main__":
             args.password = getpass.getpass("Enter password: ")
         with GarminClient(args.username, args.password) as client:
             log.info("fetching activity {} ...".format(args.activity))
-            garminexport.util.export_activity(
-                client, args.activity, args.destination, formats=[args.format])
+            summary = client.get_activity_summary(args.activity)
+            starttime = dateutil.parser.parse(summary["activity"]["activitySummary"]["BeginTimestamp"]["value"])
+            garminexport.backup.download(
+                client, (args.activity, starttime), args.destination, export_formats=[args.format])
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         log.error(u"failed with exception: %s", e)

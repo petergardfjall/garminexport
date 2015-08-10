@@ -45,10 +45,11 @@ def export_filename(activity, export_format):
     :return: The file name to use for the exported activity.
     :rtype: str
     """
-    return "{time}_{id}{suffix}".format(
+    fn = "{time}_{id}{suffix}".format(
         id=activity[0],
         time=activity[1].isoformat(), 
         suffix=format_suffix[export_format])   
+    return fn.replace(':','_') if os.name=='nt' else fn
 
 
 def need_backup(activities, backup_dir, export_formats=None):
