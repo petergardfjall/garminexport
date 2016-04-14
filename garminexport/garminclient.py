@@ -36,6 +36,9 @@ log = logging.getLogger(__name__)
 # reduce logging noise from requests library
 logging.getLogger("requests").setLevel(logging.ERROR)
 
+SSO_LOGIN_URL = "https://sso.garmin.com/sso/login"
+"""The Garmin Connect Single-Sign On login URL."""
+
 
 def require_session(client_function):
     """Decorator that is used to annotate :class:`GarminClient`
@@ -88,7 +91,7 @@ class GarminClient(object):
         self.disconnect()
         
     def connect(self):
-        self.session = requests.Session()       
+        self.session = requests.Session()
         self._authenticate()
         
     def disconnect(self):
@@ -109,18 +112,31 @@ class GarminClient(object):
         log.debug("auth ticket validation url: {}".format(validation_url))
         self._validate_auth_ticket(validation_url)
 
-        # referer seems to be a header that is required by the REST API
+        # Referer seems to be a header that is required by the REST API
         self.session.headers.update({'Referer': "https://some.random.site"})
         
+        
+        
     def _get_flow_execution_key(self, request_params):
+        # The flowExecutionKey is embedded in the
+        # https://sso.garmin.com/sso/login response page. For example:
+        #   <!-- flowExecutionKey: [e3s1] -->
         log.debug("get flow execution key ...")
-        response = self.session.get(
-            "https://sso.garmin.com/sso/login", params=request_params)
-        # parse out flowExecutionKey
-        flow_execution_key = re.search(
-            r'name="lt"\s+value="([^"]+)"', response.text).groups(1)[0]
+        response = self.session.get(SSO_LOGIN_URL, params=request_params)
+        if response.status_code != 200:
+            raise RuntimeError(
+                "auth failure: %s: code %d: %s" %
+                (SSO_LOGIN_URL, response.status_code, response.text))
+        # extract flowExecutionKey
+        match = re.search(r'name="lt"\s+value="([^"]+)"', response.text)
+        if not match:
+            raise RuntimeError(
+                "auth failure: unable to extract flowExecutionKey: %s:\n%s" %
+                (SSO_LOGIN_URL, response.text))
+        flow_execution_key = match.groups(1)[0]
         return flow_execution_key
 
+    
     def _get_auth_ticket(self, flow_execution_key, request_params):
         data = {
             "username": self.username, "password": self.password,
@@ -128,12 +144,12 @@ class GarminClient(object):
         }
         log.debug("single sign-on ...")
         sso_response = self.session.post(
-            "https://sso.garmin.com/sso/login",
-            params=request_params, data=data, allow_redirects=False)
+            SSO_LOGIN_URL, params=request_params,
+            data=data, allow_redirects=False)
         # response must contain an SSO ticket
         ticket_match = re.search("ticket=([^']+)'", sso_response.text)
         if not ticket_match:
-            raise ValueError("failed to get authentication ticket: "
+            raise ValueError("auth failure: unable to get auth ticket: "
                              "did you enter valid credentials?")
         ticket = ticket_match.group(1)
         log.debug("SSO ticket: {}".format(ticket))
@@ -143,16 +159,31 @@ class GarminClient(object):
         validation_url = validation_url.group(1)
         return validation_url
 
+    
     def _validate_auth_ticket(self, validation_url):
-        log.debug("validating authentication ticket ...")
-        response = self.session.get(validation_url, allow_redirects=True)
-        if response.status_code == 200 or response.status_code == 404:
-            # for some reason a 404 response code can also denote a
-            # successful auth ticket validation
+        log.debug("validating auth ticket at %s ...", validation_url)
+        response = self.session.get(validation_url, allow_redirects=False)
+
+        # It appears as if from this point on, the User-Agent header needs to
+        # be set to something similar to the value below for authentication
+        # to succeed and for downloads of .fit files to work properly.
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36'
+        })
+
+        # we will be redirected several times. just follow through ..
+        while response.status_code == 302:
+            redirect_url = response.headers['Location']
+            log.debug("redirected to: '%s'", redirect_url)
+            response = self.session.get(redirect_url, allow_redirects=False)
+        
+        if response.status_code == 200:
+            # auth ticket successfully validated.
+            # our client should now have all necessary cookies set.
             return
             
         raise Exception(
-            u"failed to validate authentication ticket: {}:\n{}".format(
+            u"auth failure: unable to validate auth ticket: {}:\n{}".format(
                 response.status_code, response.text))
         
         
@@ -223,7 +254,7 @@ class GarminClient(object):
         :returns: The activity summary as a JSON dict.
         :rtype: dict
         """
-        response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.3/json/activity/{}".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/json/activity/{}".format(activity_id))
         if response.status_code != 200:
             raise Exception(u"failed to fetch activity {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
@@ -241,7 +272,7 @@ class GarminClient(object):
         :rtype: dict
         """
         # mounted at xml or json depending on result encoding
-        response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.3/json/activityDetails/{}".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/json/activityDetails/{}".format(activity_id))
         if response.status_code != 200:
             raise Exception(u"failed to fetch activity details for {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))        
@@ -260,7 +291,7 @@ class GarminClient(object):
           or ``None`` if the activity couldn't be exported to GPX.
         :rtype: str
         """
-        response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.3/gpx/course/{}".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/gpx/course/{}".format(activity_id))
         # An alternate URL that seems to produce the same results
         # and is the one used when exporting through the Garmin
         # Connect web page.
@@ -288,7 +319,7 @@ class GarminClient(object):
         :rtype: str
         """
         
-        response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.1/tcx/activity/{}?full=true".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.1/tcx/activity/{}?full=true".format(activity_id))
         if response.status_code == 404:
             return None
         if response.status_code != 200:
@@ -309,7 +340,7 @@ class GarminClient(object):
           its contents, or :obj:`(None,None)` if no file is found.
         :rtype: (str, str)
         """
-        response = self.session.get("https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/download-service/files/activity/{}".format(activity_id))
         if response.status_code == 404:
             # Manually entered activity, no file source available
             return (None,None)
