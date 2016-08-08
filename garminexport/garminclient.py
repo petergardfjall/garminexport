@@ -319,7 +319,7 @@ class GarminClient(object):
         :rtype: str
         """
         
-        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.1/tcx/activity/{}?full=true".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/tcx/activity/{}?full=true".format(activity_id))
         if response.status_code == 404:
             return None
         if response.status_code != 200:
