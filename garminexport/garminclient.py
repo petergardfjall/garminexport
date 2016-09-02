@@ -177,14 +177,22 @@ class GarminClient(object):
             log.debug("redirected to: '%s'", redirect_url)
             response = self.session.get(redirect_url, allow_redirects=False)
         
-        if response.status_code == 200:
-            # auth ticket successfully validated.
-            # our client should now have all necessary cookies set.
-            return
+        if response.status_code != 200:
+            raise Exception(
+                u"auth failure: unable to validate auth ticket: {}:\n{}".format(
+                    response.status_code, response.text))
+
+        # auth ticket successfully validated.
+        # our client should now have all necessary cookies set.
+
+        # as a final step in the "Garmin login rain dance", it appears
+        # as though we need to touch on their legacy session page before
+        # being granted access to some api services (such as the
+        # activity-search-service).
+        self.session.get('https://connect.garmin.com/legacy/session')        
+
+        return
             
-        raise Exception(
-            u"auth failure: unable to validate auth ticket: {}:\n{}".format(
-                response.status_code, response.text))
         
         
     @require_session
@@ -291,7 +299,7 @@ class GarminClient(object):
           or ``None`` if the activity couldn't be exported to GPX.
         :rtype: str
         """
-        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/gpx/course/{}".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/download-service/export/gpx/activity/{}".format(activity_id))
         # An alternate URL that seems to produce the same results
         # and is the one used when exporting through the Garmin
         # Connect web page.
@@ -319,7 +327,7 @@ class GarminClient(object):
         :rtype: str
         """
         
-        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/tcx/activity/{}?full=true".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/download-service/export/tcx/activity/{}".format(activity_id))
         if response.status_code == 404:
             return None
         if response.status_code != 200:
