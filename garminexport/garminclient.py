@@ -109,6 +109,9 @@ class GarminClient(object):
         flow_execution_key = self._get_flow_execution_key(params)
         log.debug("flow execution key: '{}'".format(flow_execution_key))
         validation_url = self._get_auth_ticket(flow_execution_key, params)
+        # recently, the validation url has started to escape slash characters
+        # (with a backslash). remove any such occurences.
+        validation_url = validation_url.replace("\/", "/")
         log.debug("auth ticket validation url: {}".format(validation_url))
         self._validate_auth_ticket(validation_url)
 
