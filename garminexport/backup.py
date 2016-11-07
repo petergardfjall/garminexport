@@ -115,6 +115,7 @@ def download(client, activity, backup_dir, export_formats=None):
     id = activity[0]
         
     if 'json_summary' in export_formats:
+        log.debug("getting json summary for %s", id)
         activity_summary = client.get_activity_summary(id)
         dest = os.path.join(
             backup_dir, export_filename(activity, 'json_summary'))
@@ -123,6 +124,7 @@ def download(client, activity, backup_dir, export_formats=None):
                 activity_summary, ensure_ascii=False, indent=4))
             
     if 'json_details' in export_formats:
+        log.debug("getting json details for %s", id)
         activity_details = client.get_activity_details(id)
         dest = os.path.join(
             backup_dir, export_filename(activity, 'json_details'))
@@ -133,6 +135,7 @@ def download(client, activity, backup_dir, export_formats=None):
     not_found_path = os.path.join(backup_dir, not_found_file)
     with open(not_found_path, mode="a") as not_found:    
         if 'gpx' in export_formats:
+            log.debug("getting gpx for %s", id)
             activity_gpx = client.get_activity_gpx(id)
             dest = os.path.join(
                 backup_dir, export_filename(activity, 'gpx'))        
@@ -143,6 +146,7 @@ def download(client, activity, backup_dir, export_formats=None):
                     f.write(activity_gpx)
             
         if 'tcx' in export_formats:
+            log.debug("getting tcx for %s", id)
             activity_tcx = client.get_activity_tcx(id)
             dest = os.path.join(
                 backup_dir, export_filename(activity, 'tcx'))        
@@ -153,6 +157,7 @@ def download(client, activity, backup_dir, export_formats=None):
                     f.write(activity_tcx)
             
         if 'fit' in export_formats:
+            log.debug("getting fit for %s", id)
             activity_fit = client.get_activity_fit(id)
             dest = os.path.join(
                 backup_dir, export_filename(activity, 'fit'))

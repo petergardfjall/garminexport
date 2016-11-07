@@ -265,9 +265,9 @@ class GarminClient(object):
         :returns: The activity summary as a JSON dict.
         :rtype: dict
         """
-        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/json/activity/{}".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/json/activity_embed/{}".format(activity_id))
         if response.status_code != 200:
-            raise Exception(u"failed to fetch activity {}: {}\n{}".format(
+            raise Exception(u"failed to fetch json summary for activity {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
         return json.loads(response.text)
 
@@ -285,7 +285,7 @@ class GarminClient(object):
         # mounted at xml or json depending on result encoding
         response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/json/activityDetails/{}".format(activity_id))
         if response.status_code != 200:
-            raise Exception(u"failed to fetch activity details for {}: {}\n{}".format(
+            raise Exception(u"failed to fetch json activityDetails for {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))        
         return json.loads(response.text)
 
@@ -357,7 +357,7 @@ class GarminClient(object):
             return (None,None)
         if response.status_code != 200:
             raise Exception(
-                u"failed to get original activity file {}: {}\n{}".format(
+                u"failed to get original activity file for {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
 
         # return the first entry from the zip archive where the filename is
