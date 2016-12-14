@@ -104,7 +104,8 @@ class GarminClient(object):
         params = {
             "service": "http://connect.garmin.com/post-auth/login",
             "clientId": "GarminConnect",
-            "consumeServiceTicket": "false"
+            "consumeServiceTicket": "false",
+            "gauthHost": "https://sso.garmin.com/sso"
         }        
         flow_execution_key = self._get_flow_execution_key(params)
         log.debug("flow execution key: '{}'".format(flow_execution_key))
@@ -131,12 +132,12 @@ class GarminClient(object):
                 "auth failure: %s: code %d: %s" %
                 (SSO_LOGIN_URL, response.status_code, response.text))
         # extract flowExecutionKey
-        match = re.search(r'name="lt"\s+value="([^"]+)"', response.text)
+        match = re.search(r'<!-- flowExecutionKey: \[(\w+)\]', response.text)
         if not match:
             raise RuntimeError(
                 "auth failure: unable to extract flowExecutionKey: %s:\n%s" %
                 (SSO_LOGIN_URL, response.text))
-        flow_execution_key = match.groups(1)[0]
+        flow_execution_key = match.group(1)
         return flow_execution_key
 
     
