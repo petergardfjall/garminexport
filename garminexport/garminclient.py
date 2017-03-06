@@ -308,9 +308,9 @@ class GarminClient(object):
         # and is the one used when exporting through the Garmin
         # Connect web page.
         #response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.1/gpx/activity/{}?full=true".format(activity_id))
-        if response.status_code == 404:
+        if response.status_code in (404, 204):
             return None
-        if response.status_code != 200:
+        elif response.status_code != 200:
             raise Exception(u"failed to fetch GPX for activity {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))        
         return response.text
