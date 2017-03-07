@@ -36,7 +36,7 @@ def export_filename(activity, export_format):
     to be exported to a given format. Exported files follow this pattern:
       ``<timestamp>_<activity_id>_<suffix>``.
     For example: ``2015-02-17T05:45:00+00:00_123456789.tcx``
-    
+
     :param activity: An activity tuple `(id, starttime)`
     :type activity: tuple of `(int, datetime)`
     :param export_format: The export format (see :attr:`export_formats`)
@@ -47,8 +47,8 @@ def export_filename(activity, export_format):
     """
     fn = "{time}_{id}{suffix}".format(
         id=activity[0],
-        time=activity[1].isoformat(), 
-        suffix=format_suffix[export_format])   
+        time=activity[1].isoformat(),
+        suffix=format_suffix[export_format])
     return fn.replace(':','_') if os.name=='nt' else fn
 
 
@@ -78,7 +78,7 @@ def need_backup(activities, backup_dir, export_formats=None):
             need_backup.add(activity)
     return need_backup
 
-    
+
 def _not_found_activities(backup_dir):
     # consider all entries in <backup_dir>/.not_found as backed up
     # (or rather, as tried but failed back ups)
@@ -90,10 +90,10 @@ def _not_found_activities(backup_dir):
     log.debug("%d tried but failed activities in %s",
               len(failed_activities), _not_found)
     return failed_activities
-    
 
-    
-def download(client, activity, backup_dir, export_formats=None):
+
+
+def download(client, activity, retryer, backup_dir, export_formats=None):
     """Exports a Garmin Connect activity to a given set of formats
     and saves the resulting file(s) to a given backup directory.
     In case a given format cannot be exported for the activity, the
@@ -106,6 +106,9 @@ def download(client, activity, backup_dir, export_formats=None):
     :type client: :class:`garminexport.garminclient.GarminClient`
     :param activity: An activity tuple `(id, starttime)`
     :type activity: tuple of `(int, datetime)`
+    :param retryer: A :class:`garminexport.retryer.Retryer` instance that
+      will handle failed download attempts.
+    :type retryer: :class:`garminexport.retryer.Retryer`
     :param backup_dir: Backup directory path (assumed to exist already).
     :type backup_dir: str
     :keyword export_formats: Which format(s) to export to. Could be any
@@ -113,19 +116,20 @@ def download(client, activity, backup_dir, export_formats=None):
     :type export_formats: list of str
     """
     id = activity[0]
-        
+
     if 'json_summary' in export_formats:
         log.debug("getting json summary for %s", id)
-        activity_summary = client.get_activity_summary(id)
+
+        activity_summary = retryer.call(client.get_activity_summary, id)
         dest = os.path.join(
             backup_dir, export_filename(activity, 'json_summary'))
         with codecs.open(dest, encoding="utf-8", mode="w") as f:
             f.write(json.dumps(
                 activity_summary, ensure_ascii=False, indent=4))
-            
+
     if 'json_details' in export_formats:
         log.debug("getting json details for %s", id)
-        activity_details = client.get_activity_details(id)
+        activity_details = retryer.call(client.get_activity_details, id)
         dest = os.path.join(
             backup_dir, export_filename(activity, 'json_details'))
         with codecs.open(dest, encoding="utf-8", mode="w") as f:
@@ -133,32 +137,32 @@ def download(client, activity, backup_dir, export_formats=None):
                 activity_details, ensure_ascii=False, indent=4))
 
     not_found_path = os.path.join(backup_dir, not_found_file)
-    with open(not_found_path, mode="a") as not_found:    
+    with open(not_found_path, mode="a") as not_found:
         if 'gpx' in export_formats:
             log.debug("getting gpx for %s", id)
-            activity_gpx = client.get_activity_gpx(id)
+            activity_gpx = retryer.call(client.get_activity_gpx, id)
             dest = os.path.join(
-                backup_dir, export_filename(activity, 'gpx'))        
+                backup_dir, export_filename(activity, 'gpx'))
             if activity_gpx is None:
                 not_found.write(os.path.basename(dest) + "\n")
             else:
                 with codecs.open(dest, encoding="utf-8", mode="w") as f:
                     f.write(activity_gpx)
-            
+
         if 'tcx' in export_formats:
             log.debug("getting tcx for %s", id)
-            activity_tcx = client.get_activity_tcx(id)
+            activity_tcx = retryer.call(client.get_activity_tcx, id)
             dest = os.path.join(
-                backup_dir, export_filename(activity, 'tcx'))        
+                backup_dir, export_filename(activity, 'tcx'))
             if activity_tcx is None:
                 not_found.write(os.path.basename(dest) + "\n")
             else:
                 with codecs.open(dest, encoding="utf-8", mode="w") as f:
                     f.write(activity_tcx)
-            
+
         if 'fit' in export_formats:
             log.debug("getting fit for %s", id)
-            activity_fit = client.get_activity_fit(id)
+            activity_fit = retryer.call(client.get_activity_fit, id)
             dest = os.path.join(
                 backup_dir, export_filename(activity, 'fit'))
             if activity_fit is None:
@@ -166,5 +170,3 @@ def download(client, activity, backup_dir, export_formats=None):
             else:
                 with open(dest, mode="wb") as f:
                     f.write(activity_fit)
-    
-
