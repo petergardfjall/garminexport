@@ -372,8 +372,8 @@ class GarminClient(object):
 
         # upload it
         files = dict(data=(fn, file))
-        response = self.session.post("https://connect.garmin.com/proxy/upload-service-1.1/json/upload/.{}".format(format),
-                                     files=files)
+        response = self.session.post("https://connect.garmin.com/modern/proxy/upload-service/upload/.{}".format(format),
+                                     files=files, headers={"nk": "NT"})
 
         # check response and get activity ID
         if response.status_code != 200:
