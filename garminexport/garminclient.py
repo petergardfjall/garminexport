@@ -376,14 +376,21 @@ class GarminClient(object):
                                      files=files, headers={"nk": "NT"})
 
         # check response and get activity ID
-        if response.status_code != 200:
+        try:
+            j = response.json()["detailedImportResult"]
+        except (json.JSONDecodeException, KeyError):
             raise Exception(u"failed to upload {} for activity: {}\n{}".format(
                 format, response.status_code, response.text))
 
-        j = response.json()
-        if len(j["detailedImportResult"]["failures"]) or len(j["detailedImportResult"]["successes"])!=1:
-            raise Exception(u"failed to upload {} for activity")
-        activity_id = j["detailedImportResult"]["successes"][0]["internalId"]
+        if len(j["failures"]) or len(j["successes"])<1:
+            raise Exception(u"failed to upload {} for activity: {}\n{}".format(
+                format, response.status_code, j["failures"]))
+
+        if len(j["successes"])>1:
+            raise Exception(u"uploading {} resulted in multiple activities ({})".format(
+                format, len(j["successes"])))
+
+        activity_id = j["successes"][0]["internalId"]
 
         # add optional fields
         fields = ( ('name',name,("display","value")),
