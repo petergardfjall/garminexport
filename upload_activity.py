@@ -42,6 +42,8 @@ if __name__ == "__main__":
     parser.add_argument(
         '-P', '--private', action='store_true', help="Make activity private on Garmin Connect.")
     parser.add_argument(
+        '-T', '--type', help="Override activity type (running, cycling, walking, hiking, strength_training, etc.)")
+    parser.add_argument(
         "--log-level", metavar="LEVEL", type=str,
         help=("Desired log output level (DEBUG, INFO, WARNING, ERROR). "
               "Default: INFO."), default="INFO")
@@ -61,9 +63,9 @@ if __name__ == "__main__":
             for activity in args.activity:
                 log.info("uploading activity file {} ...".format(activity.name))
                 try:
-                    id = client.upload_activity(activity, name=args.name, description=args.description, private=args.private)
+                    id = client.upload_activity(activity, name=args.name, description=args.description, private=args.private, activity_type=args.type)
                 except Exception as e:
-                    log.error("upload failed: {}".format(e))
+                    log.error("upload failed: {!r}".format(e))
                 else:
                     log.info("upload successful: https://connect.garmin.com/modern/activity/{}".format(id))
     except Exception as e:

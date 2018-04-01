@@ -393,21 +393,17 @@ class GarminClient(object):
         activity_id = j["successes"][0]["internalId"]
 
         # add optional fields
-        fields = ( ('name',name,("display","value")),
-                   ('description',description,("display","value")),
-                   ('type',activity_type,("activityType","key")),
-                   ('privacy','private' if private else None,("definition","key")) )
-        for endpoint, value, path in fields:
-            if value is not None:
-                response = self.session.post("https://connect.garmin.com/proxy/activity-service-1.2/json/{}/{}".format(endpoint, activity_id),
-                                             data={'value':value})
-                if response.status_code != 200:
-                    raise Exception(u"failed to set {} for activity {}: {}\n{}".format(
-                        endpoint, activity_id, response.status_code, response.text))
-
-                j = response.json()
-                p0, p1 = path
-                if p0 not in j or j[p0][p1] != value:
-                    raise Exception(u"failed to set {} for activity {}\n".format(endpoint, activity_id))
+        data = {}
+        if name is not None: data['activityName'] = name
+        if description is not None: data['description'] = name
+        if activity_type is not None: data['activityTypeDTO'] = {"typeKey": activity_type}
+        if private: data['privacy'] = {"typeKey": "private"}
+        if data:
+            data['activityId'] = activity_id
+            encoding_headers = {"Content-Type": "application/json; charset=UTF-8"} # see Tapiriik
+            response = self.session.put("https://connect.garmin.com/proxy/activity-service/activity/{}".format(activity_id), data=json.dumps(data), headers=encoding_headers)
+            if response.status_code != 204:
+                raise Exception(u"failed to set metadata for activity {}: {}\n{}".format(
+                    activity_id, response.status_code, response.text))
 
         return activity_id
