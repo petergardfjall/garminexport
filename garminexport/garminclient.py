@@ -155,7 +155,8 @@ class GarminClient(object):
         """Return all activity ids stored by the logged in user, along
         with their starting timestamps.
 
-        :returns: The full list of activity identifiers.
+        :returns: The full list of activity identifiers (along with their
+          starting timestamps).
         :rtype: tuples of (int, datetime)
         """
         ids = []
@@ -171,8 +172,9 @@ class GarminClient(object):
 
     @require_session
     def _fetch_activity_ids_and_ts(self, start_index, max_limit=100):
-        """Return a sequence of activity ids starting at a given index,
-        with index 0 being the user's most recently registered activity.
+        """Return a sequence of activity ids (along with their starting
+        timestamps) starting at a given index, with index 0 being the user's
+        most recently registered activity.
 
         Should the index be out of bounds or the account empty, an empty
         list is returned.
@@ -182,26 +184,32 @@ class GarminClient(object):
         :param max_limit: The (maximum) number of activities to retrieve.
         :type max_limit: int
 
-        :returns: A list of activity identifiers.
-        :rtype: list of str
+        :returns: A list of activity identifiers (along with their
+          starting timestamps).
+        :rtype: tuples of (int, datetime)
         """
         log.debug("fetching activities {} through {} ...".format(
             start_index, start_index+max_limit-1))
         response = self.session.get(
-            "https://connect.garmin.com/proxy/activity-search-service-1.2/json/activities", params={"start": start_index, "limit": max_limit})
+            "https://connect.garmin.com/modern/proxy/activitylist-service/activities/search/activities",
+            params={"start": start_index, "limit": max_limit})
         if response.status_code != 200:
             raise Exception(
                 u"failed to fetch activities {} to {} types: {}\n{}".format(
                     start_index, (start_index+max_limit-1),
                     response.status_code, response.text))
-        results = json.loads(response.text)["results"]
-        if not "activities" in results:
+        activities = json.loads(response.text)
+        if not activities:
             # index out of bounds or empty account
             return []
 
-        entries = [ (int(entry["activity"]["activityId"]),
-                     dateutil.parser.parse(entry["activity"]["activitySummary"]["BeginTimestamp"]["value"]))
-                    for entry in results["activities"] ]
+        entries = []
+        for activity in activities:
+            id = int(activity["activityId"])
+            timestamp_utc = dateutil.parser.parse(activity["startTimeGMT"])
+            # make sure UTC timezone gets set
+            timestamp_utc = timestamp_utc.replace(tzinfo=dateutil.tz.tzutc())
+            entries.append( (id, timestamp_utc) )
         log.debug("got {} activities.".format(len(entries)))
         return entries
 
@@ -217,8 +225,10 @@ class GarminClient(object):
         :returns: The activity summary as a JSON dict.
         :rtype: dict
         """
-        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/json/activity_embed/{}".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service/activity/{}".format(activity_id))
         if response.status_code != 200:
+            log.error(u"failed to fetch json summary for activity {}: {}\n{}".format(
+                activity_id, response.status_code, response.text))
             raise Exception(u"failed to fetch json summary for activity {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
         return json.loads(response.text)
