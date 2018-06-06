@@ -8,13 +8,14 @@ import logging
 import os
 import re
 import requests
-from StringIO import StringIO
+from io import BytesIO
 import sys
 import zipfile
 import dateutil
 import dateutil.parser
 import os.path
 from functools import wraps
+from builtins import range
 
 #
 # Note: For more detailed information about the API services
@@ -163,7 +164,7 @@ class GarminClient(object):
         batch_size = 100
         # fetch in batches since the API doesn't allow more than a certain
         # number of activities to be retrieved on every invocation
-        for start_index in xrange(0, sys.maxint, batch_size):
+        for start_index in range(0, sys.maxsize, batch_size):
             next_batch = self._fetch_activity_ids_and_ts(start_index, batch_size)
             if not next_batch:
                 break
@@ -328,7 +329,7 @@ class GarminClient(object):
 
         # return the first entry from the zip archive where the filename is
         # activity_id (should be the only entry!)
-        zip = zipfile.ZipFile(StringIO(response.content), mode="r")
+        zip = zipfile.ZipFile(BytesIO(response.content), mode="r")
         for path in zip.namelist():
             fn, ext = os.path.splitext(path)
             if fn==str(activity_id):
