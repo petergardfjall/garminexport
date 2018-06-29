@@ -22,7 +22,7 @@ if __name__ == "__main__":
         incremental_backup(username=args.username,
                            password=args.password,
                            backup_dir=args.backup_dir,
-                           format=args.format,
+                           export_formats=args.format,
                            ignore_errors=args.ignore_errors,
                            max_retries=args.max_retries)
 
