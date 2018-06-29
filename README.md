@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/petergardfjall/garminexport.svg?branch=master)](https://travis-ci.org/petergardfjall/garminexport)
 
-Garmin Connect activity backup tool
-===================================
+# Garmin Connect activity backup tool
+
 ``garminbackup.py`` is a program that downloads activities for a
 given [Garmin Connect](http://connect.garmin.com/) account and stores
 them in a backup directory locally on the user's computer. The first time
@@ -18,8 +18,8 @@ projects that need to communicate over the Garmin Connect API. See the
 Library Import section below for more details.
 
 
-Prerequisites
-=============
+## Prerequisites
+
 The instructions below for running the program (or importing the module)
 assumes that you have Python 2.7 or Python 3+,
 [pip](http://pip.readthedocs.org/en/latest/installing.html), and
@@ -30,8 +30,8 @@ It also assumes that you have registered an account at
 [Garmin Connect](http://connect.garmin.com/).
 
 
-Getting started
-===============
+## Getting started
+
 Create and activate a new virtual environment to create an isolated development
 environment (that contains the required dependencies and nothing else).
 
@@ -50,9 +50,8 @@ Install the required dependencies in this virtual environment:
     pip install -r requirements.txt
 
 
+## Running
 
-Running
-=======
 The backup program is run as follows (use the ``--help`` flag for a full list
 of available options):
 
@@ -114,9 +113,8 @@ All files are written to the same directory (``activities/`` by default).
 Each activity file is prefixed by its upload timestamp and its activity id.
 
 
+## Library import
 
-Library import
-==============
 To install the development version of this library in your local Python
 environment, run:
 
