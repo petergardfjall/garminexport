@@ -35,7 +35,8 @@ DEFAULT_MAX_RETRIES = 7
 """The default maximum number of retries to make when fetching a single activity."""
 
 
-if __name__ == "__main__":
+def parse_args():
+
     parser = argparse.ArgumentParser(
         description=(
             "Performs incremental backups of activities for a "
@@ -68,7 +69,11 @@ if __name__ == "__main__":
         "--max-retries", metavar="NUM", default=DEFAULT_MAX_RETRIES,
         type=int, help="The maximum number of retries to make on failed attempts to fetch an activity. Exponential backoff will be used, meaning that the delay between successive attempts will double with every retry, starting at one second. DEFAULT: %d" % DEFAULT_MAX_RETRIES)
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def garminbackup(args=None):
+
     if not args.log_level in LOG_LEVELS:
         raise ValueError("Illegal log-level: {}".format(args.log_level))
 
@@ -122,3 +127,9 @@ if __name__ == "__main__":
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         log.error(u"failed with exception: %s", str(e))
+
+
+if __name__ == "__main__":
+
+    args = parse_args()
+    garminbackup(args=args)
