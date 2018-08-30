@@ -318,7 +318,11 @@ class GarminClient(object):
         :rtype: (str, str)
         """
         response = self.session.get("https://connect.garmin.com/modern/proxy/download-service/files/activity/{}".format(activity_id))
-        if response.status_code == 404:
+        # A 404 (Not Found) response is a clear indicator of a missing .fit
+        # file. As of lately, the endpoint appears to have started to
+        # respond with 500 "NullPointerException" on attempts to download a
+        # .fit file for an activity without one.
+        if response.status_code in [404, 500]:
             # Manually entered activity, no file source available
             return (None,None)
         if response.status_code != 200:
