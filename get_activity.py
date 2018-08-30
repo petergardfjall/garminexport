@@ -3,9 +3,13 @@
 Connect account and stores it locally on the user's computer.
 """
 import argparse
+from datetime import timedelta
 import getpass
 from garminexport.garminclient import GarminClient
 import garminexport.backup
+from garminexport.retryer import (
+    Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy)
+import json
 import logging
 import os
 import sys
@@ -25,7 +29,7 @@ LOG_LEVELS = {
 """Command-line (string-based) log-level mapping to logging module levels."""
 
 if __name__ == "__main__":
-    
+
     parser = argparse.ArgumentParser(
         description=("Downloads one particular activity for a given "
                      "Garmin Connect account."))
@@ -50,7 +54,7 @@ if __name__ == "__main__":
         "--log-level", metavar="LEVEL", type=str,
         help=("Desired log output level (DEBUG, INFO, WARNING, ERROR). "
               "Default: INFO."), default="INFO")
-    
+
     args = parser.parse_args()
     if not args.log_level in LOG_LEVELS:
         raise ValueError("Illegal log-level argument: {}".format(
@@ -60,7 +64,7 @@ if __name__ == "__main__":
             "Uncrecognized export format: '{}'. Must be one of {}".format(
                 args.format, garminexport.backup.export_formats))
     logging.root.setLevel(LOG_LEVELS[args.log_level])
-        
+
     try:
         if not os.path.isdir(args.destination):
             os.makedirs(args.destination)
@@ -70,11 +74,17 @@ if __name__ == "__main__":
         with GarminClient(args.username, args.password) as client:
             log.info("fetching activity {} ...".format(args.activity))
             summary = client.get_activity_summary(args.activity)
-            starttime = dateutil.parser.parse(summary["activity"]["activitySummary"]["BeginTimestamp"]["value"])
+            # set up a retryer that will handle retries of failed activity
+            # downloads
+            retryer = Retryer(
+                delay_strategy=ExponentialBackoffDelayStrategy(
+                    initial_delay=timedelta(seconds=1)),
+                stop_strategy=MaxRetriesStopStrategy(5))
+
+            starttime = dateutil.parser.parse(summary["summaryDTO"]["startTimeGMT"])
             garminexport.backup.download(
-                client, (args.activity, starttime), args.destination, export_formats=[args.format])
+                client, (args.activity, starttime), retryer, args.destination, export_formats=[args.format])
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         log.error(u"failed with exception: %s", e)
         raise
-
