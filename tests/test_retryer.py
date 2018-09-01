@@ -74,7 +74,7 @@ class TestRetryer(unittest.TestCase):
         func = lambda : int(time.time())
         
         returnval = retryer.call(func)
-        print returnval
+        print(returnval)
         
 
 class TestFixedDelayStrategy(unittest.TestCase):
