@@ -22,4 +22,5 @@ setup(name="Garmin Connect activity exporter",
           'Natural Language :: English',
           'License :: OSI Approved :: Apache Software License',
           'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.5+',
       ])
