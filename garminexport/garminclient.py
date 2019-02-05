@@ -246,7 +246,7 @@ class GarminClient(object):
         :rtype: dict
         """
         # mounted at xml or json depending on result encoding
-        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service-1.3/json/activityDetails/{}".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service/activity/{}/details".format(activity_id))
         if response.status_code != 200:
             raise Exception(u"failed to fetch json activityDetails for {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
