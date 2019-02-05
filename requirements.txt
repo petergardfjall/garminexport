@@ -1,4 +1,4 @@
-requests==2.9.1
+requests==2.21.0
 python-dateutil==2.4.1
 future==0.16.0
 
