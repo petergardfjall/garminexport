@@ -36,8 +36,8 @@ environment (that contains the required dependencies and nothing else).
     # using Python 2
     virtualenv venv.garminexport
 
-	# using Python 3
-	python -m venv venv.garminexport
+    # using Python 3
+    python -m venv venv.garminexport
 
 Activate the virtual environment
 
