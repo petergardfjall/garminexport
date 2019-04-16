@@ -114,8 +114,7 @@ class GarminClient(object):
         }
 
         self.session.headers.update({'Referer': SSO_LOGIN_URL + '?' + urllib.urlencode(request_params)})
-        auth_response = self.session.post(
-            SSO_LOGIN_URL, params=request_params, data=form_data, )
+        auth_response = self.session.post(SSO_LOGIN_URL, params=request_params, data=form_data)
         log.debug("got auth response: %s", auth_response.text)
         if auth_response.status_code != 200:
             raise ValueError(
@@ -210,12 +209,11 @@ class GarminClient(object):
 
         entries = []
         for activity in activities:
-            if int(activity["activityType"]["typeId"]) not in [9]:
-                id = int(activity["activityId"])
-                timestamp_utc = dateutil.parser.parse(activity["startTimeGMT"])
-                # make sure UTC timezone gets set
-                timestamp_utc = timestamp_utc.replace(tzinfo=dateutil.tz.tzutc())
-                entries.append((id, timestamp_utc))
+            id = int(activity["activityId"])
+            timestamp_utc = dateutil.parser.parse(activity["startTimeGMT"])
+            # make sure UTC timezone gets set
+            timestamp_utc = timestamp_utc.replace(tzinfo=dateutil.tz.tzutc())
+            entries.append((id, timestamp_utc))
         log.debug("got {} activities.".format(len(entries)))
         return entries
 
