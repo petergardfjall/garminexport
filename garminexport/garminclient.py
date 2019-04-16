@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 # reduce logging noise from requests library
 logging.getLogger("requests").setLevel(logging.ERROR)
 
-SSO_LOGIN_URL = "https://sso.garmin.com/sso/login"
+SSO_LOGIN_URL = "https://sso.garmin.com/sso/signin"
 """The Garmin Connect Single-Sign On login URL."""
 
 
@@ -110,8 +110,9 @@ class GarminClient(object):
         request_params = {
             "service": "https://connect.garmin.com/modern"
         }
+        headers={'origin': 'https://sso.garmin.com'}
         auth_response = self.session.post(
-            SSO_LOGIN_URL, params=request_params, data=form_data)
+            SSO_LOGIN_URL, headers=headers, params=request_params, data=form_data)
         log.debug("got auth response: %s", auth_response.text)
         if auth_response.status_code != 200:
             raise ValueError(
