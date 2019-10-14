@@ -127,14 +127,21 @@ def download(client, activity, retryer, backup_dir, export_formats=None):
             f.write(json.dumps(
                 activity_summary, ensure_ascii=False, indent=4))
 
-    if 'json_details' in export_formats:
-        log.debug("getting json details for %s", id)
-        activity_details = retryer.call(client.get_activity_details, id)
-        dest = os.path.join(
-            backup_dir, export_filename(activity, 'json_details'))
-        with codecs.open(dest, encoding="utf-8", mode="w") as f:
-            f.write(json.dumps(
-                activity_details, ensure_ascii=False, indent=4))
+     if 'json_details' in export_formats:
+         log.debug("getting json details for %s", id)
+         """Do not skip gqx, tcx and fit files only because
+            json_details does not exist.
+         """
+         try:
+             activity_details = retryer.call(client.get_activity_details, id)
+             dest = os.path.join(
+                 backup_dir, export_filename(activity, 'json_details'))
+             with codecs.open(dest, encoding="utf-8", mode="w") as f:
+                 f.write(json.dumps(
+                     activity_details, ensure_ascii=False, indent=4))
+         except Exception as e:
+             log.error(u"failed with exception: %s", e)
+
 
     not_found_path = os.path.join(backup_dir, not_found_file)
     with open(not_found_path, mode="a") as not_found:
