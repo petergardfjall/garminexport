@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 # reduce logging noise from requests library
 logging.getLogger("requests").setLevel(logging.ERROR)
 
-SSO_LOGIN_URL = "https://sso.garmin.com/sso/login"
+SSO_LOGIN_URL = "https://sso.garmin.com/sso/signin"
 """The Garmin Connect Single-Sign On login URL."""
 
 
@@ -110,8 +110,9 @@ class GarminClient(object):
         request_params = {
             "service": "https://connect.garmin.com/modern"
         }
+        headers={'origin': 'https://sso.garmin.com'}
         auth_response = self.session.post(
-            SSO_LOGIN_URL, params=request_params, data=form_data)
+            SSO_LOGIN_URL, headers=headers, params=request_params, data=form_data)
         log.debug("got auth response: %s", auth_response.text)
         if auth_response.status_code != 200:
             raise ValueError(
@@ -246,7 +247,7 @@ class GarminClient(object):
         :rtype: dict
         """
         # mounted at xml or json depending on result encoding
-        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service/json/activity/{}/details".format(activity_id))
+        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service/activity/{}/details".format(activity_id))
         if response.status_code != 200:
             raise Exception(u"failed to fetch json activityDetails for {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
@@ -319,7 +320,11 @@ class GarminClient(object):
         :rtype: (str, str)
         """
         response = self.session.get("https://connect.garmin.com/modern/proxy/download-service/files/activity/{}".format(activity_id))
-        if response.status_code == 404:
+        # A 404 (Not Found) response is a clear indicator of a missing .fit
+        # file. As of lately, the endpoint appears to have started to
+        # respond with 500 "NullPointerException" on attempts to download a
+        # .fit file for an activity without one.
+        if response.status_code in [404, 500]:
             # Manually entered activity, no file source available
             return (None,None)
         if response.status_code != 200:
