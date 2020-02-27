@@ -34,8 +34,41 @@ LOG_LEVELS = {
 DEFAULT_MAX_RETRIES = 7
 """The default maximum number of retries to make when fetching a single activity."""
 
+def get_garmin_connect_data(username,password,backup_dir,log_level,format,ignore_errors,max_retries):
+    retryer = Retryer(
+        delay_strategy=ExponentialBackoffDelayStrategy(
+            initial_delay=timedelta(seconds=1)),
+        stop_strategy=MaxRetriesStopStrategy(max_retries))
 
-if __name__ == "__main__":
+
+    with GarminClient(username, password) as client:
+        # get all activity ids and timestamps from Garmin account
+        log.info("scanning activities for %s ...", username)
+        activities = set(retryer.call(client.list_activities))
+        log.info("account has a total of %d activities", len(activities))
+
+        missing_activities = garminexport.backup.need_backup(
+            activities, backup_dir, format)
+        backed_up = activities - missing_activities
+        log.info("%s contains %d backed up activities",
+            backup_dir, len(backed_up))
+
+        log.info("activities that aren't backed up: %d",
+                    len(missing_activities))
+
+        for index, activity in enumerate(missing_activities):
+            id, start = activity
+            log.info("backing up activity %d from %s (%d out of %d) ..." % (id, start, index+1, len(missing_activities)))
+            try:
+                garminexport.backup.download(
+                    client, activity, retryer, backup_dir,
+                    format)
+            except Exception as e:
+                log.error(u"failed with exception: %s", e)
+                if not ignore_errors:
+                    raise
+
+def main():
     parser = argparse.ArgumentParser(
         description=(
             "Performs incremental backups of activities for a "
@@ -85,40 +118,13 @@ if __name__ == "__main__":
         if not args.password:
             args.password = getpass.getpass("Enter password: ")
 
-        # set up a retryer that will handle retries of failed activity
-        # downloads
-        retryer = Retryer(
-            delay_strategy=ExponentialBackoffDelayStrategy(
-                initial_delay=timedelta(seconds=1)),
-            stop_strategy=MaxRetriesStopStrategy(args.max_retries))
-
-
-        with GarminClient(args.username, args.password) as client:
-            # get all activity ids and timestamps from Garmin account
-            log.info("scanning activities for %s ...", args.username)
-            activities = set(retryer.call(client.list_activities))
-            log.info("account has a total of %d activities", len(activities))
-
-            missing_activities = garminexport.backup.need_backup(
-                activities, args.backup_dir, args.format)
-            backed_up = activities - missing_activities
-            log.info("%s contains %d backed up activities",
-                args.backup_dir, len(backed_up))
-
-            log.info("activities that aren't backed up: %d",
-                     len(missing_activities))
-
-            for index, activity in enumerate(missing_activities):
-                id, start = activity
-                log.info("backing up activity %d from %s (%d out of %d) ..." % (id, start, index+1, len(missing_activities)))
-                try:
-                    garminexport.backup.download(
-                        client, activity, retryer, args.backup_dir,
-                        args.format)
-                except Exception as e:
-                    log.error(u"failed with exception: %s", e)
-                    if not args.ignore_errors:
-                        raise
+        # set up a retryer that will handle retries of failed activity downloads
+        get_garmin_connect_data(args.username,args.password,args.backup_dir,args.log_level,args.format,args.ignore_errors,args.max_retries)
+        
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         log.error(u"failed with exception: %s", str(e))
+
+if __name__ == "__main__":
+    main()
+    
