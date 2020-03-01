@@ -9,17 +9,9 @@ import garminexport.backup
 from garminexport.backup import export_formats
 from garminexport.garminclient import GarminClient
 from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
+from garminexport.logging import LOG_LEVELS
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
-
-LOG_LEVELS = {
-    "DEBUG": logging.DEBUG,
-    "INFO": logging.INFO,
-    "WARNING": logging.WARNING,
-    "ERROR": logging.ERROR
-}
-"""Command-line (string-based) log-level mapping to logging module levels."""
 
 
 def garminbackup(args=None):
