@@ -1,10 +1,4 @@
 #! /usr/bin/env python
-"""Performs (incremental) backups of activities for a given Garmin Connect
-account.
-The activities are stored in a local directory on the user's computer.
-The backups are incremental, meaning that only activities that aren't already
-stored in the backup directory will be downloaded.
-"""
 import getpass
 import logging
 import os
@@ -16,8 +10,7 @@ from garminexport.backup import export_formats
 from garminexport.garminclient import GarminClient
 from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
 LOG_LEVELS = {
@@ -30,6 +23,14 @@ LOG_LEVELS = {
 
 
 def garminbackup(args=None):
+    """Performs (incremental) backups of activities for a given Garmin Connect account.
+
+    :param args: an object with several attributes such as `username`, `password`, `backup_dir`, `format`, etc.
+
+    The activities are stored in a local directory on the user's computer.
+    The backups are incremental, meaning that only activities that aren't already
+    stored in the backup directory will be downloaded.
+    """
     if args.log_level not in LOG_LEVELS:
         raise ValueError("Illegal log-level: {}".format(args.log_level))
 
