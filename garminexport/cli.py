@@ -10,9 +10,8 @@ DEFAULT_MAX_RETRIES = 7
 def parse_args() -> argparse.Namespace:
     """Parse CLI arguments.
 
-    :return: Namespace object holding parsed arguments as attributes
-
-
+    :return: Namespace object holding parsed arguments as attributes.
+    This object may be directly used by garminexport/garminbackup.py.
     """
     parser = argparse.ArgumentParser(
         description=(
