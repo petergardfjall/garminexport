@@ -5,10 +5,8 @@ The activities are stored in a local directory on the user's computer.
 The backups are incremental, meaning that only activities that aren't already
 stored in the backup directory will be downloaded.
 """
-from garminexport.garminbackup import parse_args, garminbackup
-
+from garminexport.cli import parse_args
+from garminexport.garminbackup import garminbackup
 
 if __name__ == "__main__":
-
-    args = parse_args()
-    garminbackup(args=args)
+    garminbackup(args=parse_args())
