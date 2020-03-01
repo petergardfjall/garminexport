@@ -2,10 +2,9 @@
 """
 import codecs
 import json
-from datetime import datetime
-import dateutil.parser
 import logging
 import os
+from datetime import datetime
 
 log = logging.getLogger(__name__)
 

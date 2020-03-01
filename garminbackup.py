@@ -8,9 +8,18 @@ stored in the backup directory will be downloaded.
 import logging
 
 from garminexport.cli import parse_args
-from garminexport.garminbackup import garminbackup
+from garminexport.incremental_backup import incremental_backup
+from garminexport.logging_config import LOG_LEVELS
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
 
 if __name__ == "__main__":
-    garminbackup(args=parse_args())
+    args = parse_args()
+    logging.root.setLevel(LOG_LEVELS[args.log_level])
+
+    incremental_backup(username=args.username,
+                       password=args.password,
+                       backup_dir=args.backup_dir,
+                       format=args.format,
+                       log_level=args.log_level,
+                       max_retries=args.max_retries)

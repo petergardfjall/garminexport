@@ -13,7 +13,7 @@ import dateutil.parser
 
 import garminexport.backup
 from garminexport.garminclient import GarminClient
-from garminexport.logging import LOG_LEVELS
+from garminexport.logging_config import LOG_LEVELS
 from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
