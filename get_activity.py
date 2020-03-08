@@ -3,30 +3,21 @@
 Connect account and stores it locally on the user's computer.
 """
 import argparse
-from datetime import timedelta
 import getpass
-from garminexport.garminclient import GarminClient
-import garminexport.backup
-from garminexport.retryer import (
-    Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy)
-import json
 import logging
 import os
 import sys
-import traceback
+from datetime import timedelta
+
 import dateutil.parser
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
-log = logging.getLogger(__name__)
+import garminexport.backup
+from garminexport.garminclient import GarminClient
+from garminexport.logging_config import LOG_LEVELS
+from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
-LOG_LEVELS = {
-    "DEBUG": logging.DEBUG,
-    "INFO": logging.INFO,
-    "WARNING": logging.WARNING,
-    "ERROR": logging.ERROR
-}
-"""Command-line (string-based) log-level mapping to logging module levels."""
+logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
+log = logging.getLogger(__name__)
 
 if __name__ == "__main__":
 
