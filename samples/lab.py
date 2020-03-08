@@ -10,10 +10,9 @@ Garmin Connect.
 
 import argparse
 import getpass
-from garminexport.garminclient import GarminClient
-import json
 import logging
-import sys
+
+from garminexport.garminclient import GarminClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)

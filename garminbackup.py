@@ -26,4 +26,4 @@ if __name__ == "__main__":
                            max_retries=args.max_retries)
 
     except Exception as e:
-        log.error(u"failed with exception: %s", str(e))
+        log.error("failed with exception: {}".format(e))
