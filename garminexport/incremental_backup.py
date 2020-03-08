@@ -7,7 +7,6 @@ from datetime import timedelta
 import garminexport.backup
 from garminexport.backup import export_formats
 from garminexport.garminclient import GarminClient
-from garminexport.logging_config import LOG_LEVELS
 from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
 log = logging.getLogger(__name__)
@@ -17,7 +16,6 @@ def incremental_backup(username: str,
                        password: str = None,
                        backup_dir: str = os.path.join(".", "activities"),
                        format: str = 'ALL',
-                       log_level: str = 'INFO',
                        ignore_errors: bool = False,
                        max_retries: int = 7):
     """Performs (incremental) backups of activities for a given Garmin Connect account.
@@ -26,7 +24,6 @@ def incremental_backup(username: str,
     :param password: Garmin Connect user password. Default: None. If not provided, would be asked interactively.
     :param backup_dir: Destination directory for downloaded activities. Default: ./activities/".
     :param format: Desired output formats (json_summary, json_details, gpx, tcx, fit). Default: ALL.
-    :param log_level: Desired log output level (DEBUG, INFO, WARNING, ERROR). Default: INFO.
     :param ignore_errors: Ignore errors and keep going. Default: False.
     :param max_retries: The maximum number of retries to make on failed attempts to fetch an activity.
     Exponential backoff will be used, meaning that the delay between successive attempts
@@ -36,9 +33,6 @@ def incremental_backup(username: str,
     The backups are incremental, meaning that only activities that aren't already
     stored in the backup directory will be downloaded.
     """
-    if log_level not in LOG_LEVELS:
-        raise ValueError("Illegal log-level: {}".format(log_level))
-
     # if no --format was specified, all formats are to be backed up
     format = format if format else export_formats
     log.info("backing up formats: %s", ", ".join(format))
