@@ -5,7 +5,6 @@ Connect account.
 import argparse
 import getpass
 import logging
-import sys
 
 from garminexport.garminclient import GarminClient
 from garminexport.logging_config import LOG_LEVELS
@@ -13,11 +12,11 @@ from garminexport.logging_config import LOG_LEVELS
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description=("Uploads an activity file to a Garmin Connect account."))
+        description="Uploads an activity file to a Garmin Connect account.")
+
     # positional args
     parser.add_argument(
         "username", metavar="<username>", type=str, help="Account user name.")
@@ -38,31 +37,34 @@ if __name__ == "__main__":
         '-T', '--type', help="Override activity type (running, cycling, walking, hiking, strength_training, etc.)")
     parser.add_argument(
         "--log-level", metavar="LEVEL", type=str,
-        help=("Desired log output level (DEBUG, INFO, WARNING, ERROR). "
-              "Default: INFO."), default="INFO")
+        help="Desired log output level (DEBUG, INFO, WARNING, ERROR). Default: INFO.",
+        default="INFO")
 
     args = parser.parse_args()
-    if len(args.activity)>1 and (args.description is not None or args.name is not None):
+
+    if len(args.activity) > 1 and (args.description is not None or args.name is not None):
         parser.error("When uploading multiple activities, --name or --description cannot be used.")
-    if not args.log_level in LOG_LEVELS:
-        raise ValueError("Illegal log-level argument: {}".format(
-            args.log_level))
+
+    if args.log_level not in LOG_LEVELS:
+        raise ValueError("Illegal log-level argument: {}".format(args.log_level))
+
     logging.root.setLevel(LOG_LEVELS[args.log_level])
 
     try:
         if not args.password:
             args.password = getpass.getpass("Enter password: ")
+
         with GarminClient(args.username, args.password) as client:
             for activity in args.activity:
                 log.info("uploading activity file {} ...".format(activity.name))
                 try:
-                    id = client.upload_activity(activity, name=args.name, description=args.description, private=args.private, activity_type=args.type)
+                    id = client.upload_activity(activity, name=args.name, description=args.description,
+                                                private=args.private, activity_type=args.type)
                 except Exception as e:
                     log.error("upload failed: {!r}".format(e))
                 else:
                     log.info("upload successful: https://connect.garmin.com/modern/activity/{}".format(id))
-    except Exception as e:
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        log.error(u"failed with exception: %s", e)
-        raise
 
+    except Exception as e:
+        log.error("failed with exception: {}".format(e))
+        raise
