@@ -36,14 +36,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-f", "--format", choices=export_formats,
         default=None, action='append',
-        help="Desired output formats (" + ', '.join(export_formats) + "). Default: ALL.")
+        help="Desired output formats ({}). Default: ALL.".format(', '.join(export_formats)))
     parser.add_argument(
         "-E", "--ignore-errors", action='store_true',
         help="Ignore errors and keep going. Default: FALSE")
     parser.add_argument(
         "--max-retries", metavar="NUM", default=DEFAULT_MAX_RETRIES,
-        type=int, help=("The maximum number of retries to make on failed attempts to fetch an activity. "
-                        "Exponential backoff will be used, meaning that the delay between successive attempts "
-                        "will double with every retry, starting at one second. DEFAULT: %d") % DEFAULT_MAX_RETRIES)
+        type=int,
+        help=("The maximum number of retries to make on failed attempts to fetch an activity. "
+              "Exponential backoff will be used, meaning that the delay between successive attempts "
+              "will double with every retry, starting at one second. DEFAULT: {}").format(DEFAULT_MAX_RETRIES))
 
     return parser.parse_args()
