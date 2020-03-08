@@ -88,8 +88,7 @@ def _not_found_activities(backup_dir):
     if os.path.isfile(_not_found):
         with open(_not_found, mode="r") as f:
             failed_activities = [line.strip() for line in f.readlines()]
-    log.debug("%d tried but failed activities in %s",
-              len(failed_activities), _not_found)
+    log.debug("{} tried but failed activities in {}".format(len(failed_activities), _not_found))
     return failed_activities
 
 
