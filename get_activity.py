@@ -6,7 +6,6 @@ import argparse
 import getpass
 import logging
 import os
-import sys
 from datetime import timedelta
 
 import dateutil.parser
@@ -22,8 +21,8 @@ log = logging.getLogger(__name__)
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description=("Downloads one particular activity for a given "
-                     "Garmin Connect account."))
+        description="Downloads one particular activity for a given Garmin Connect account.")
+
     # positional args
     parser.add_argument(
         "username", metavar="<username>", type=str, help="Account user name.")
@@ -31,29 +30,30 @@ if __name__ == "__main__":
         "activity", metavar="<activity>", type=int, help="Activity ID.")
     parser.add_argument(
         "format", metavar="<format>", type=str,
-        help="Export format (one of: {}).".format(
-            garminexport.backup.export_formats))
+        help="Export format (one of: {}).".format(garminexport.backup.export_formats))
 
     # optional args
     parser.add_argument(
         "--password", type=str, help="Account password.")
     parser.add_argument(
         "--destination", metavar="DIR", type=str,
-        help=("Destination directory for downloaded activity. Default: "
-              "./activities/"), default=os.path.join(".", "activities"))
+        help="Destination directory for downloaded activity. Default: ./activities/",
+        default=os.path.join(".", "activities"))
     parser.add_argument(
         "--log-level", metavar="LEVEL", type=str,
-        help=("Desired log output level (DEBUG, INFO, WARNING, ERROR). "
-              "Default: INFO."), default="INFO")
+        help="Desired log output level (DEBUG, INFO, WARNING, ERROR). Default: INFO.",
+        default="INFO")
 
     args = parser.parse_args()
-    if not args.log_level in LOG_LEVELS:
-        raise ValueError("Illegal log-level argument: {}".format(
-            args.log_level))
-    if not args.format in garminexport.backup.export_formats:
+
+    if args.log_level not in LOG_LEVELS:
+        raise ValueError("Illegal log-level argument: {}".format(args.log_level))
+
+    if args.format not in garminexport.backup.export_formats:
         raise ValueError(
-            "Uncrecognized export format: '{}'. Must be one of {}".format(
+            "Unrecognized export format: '{}'. Must be one of {}".format(
                 args.format, garminexport.backup.export_formats))
+
     logging.root.setLevel(LOG_LEVELS[args.log_level])
 
     try:
@@ -62,20 +62,18 @@ if __name__ == "__main__":
 
         if not args.password:
             args.password = getpass.getpass("Enter password: ")
+
         with GarminClient(args.username, args.password) as client:
             log.info("fetching activity {} ...".format(args.activity))
             summary = client.get_activity_summary(args.activity)
-            # set up a retryer that will handle retries of failed activity
-            # downloads
+            # set up a retryer that will handle retries of failed activity downloads
             retryer = Retryer(
-                delay_strategy=ExponentialBackoffDelayStrategy(
-                    initial_delay=timedelta(seconds=1)),
+                delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=1)),
                 stop_strategy=MaxRetriesStopStrategy(5))
 
-            starttime = dateutil.parser.parse(summary["summaryDTO"]["startTimeGMT"])
+            start_time = dateutil.parser.parse(summary["summaryDTO"]["startTimeGMT"])
             garminexport.backup.download(
-                client, (args.activity, starttime), retryer, args.destination, export_formats=[args.format])
+                client, (args.activity, start_time), retryer, args.destination, export_formats=[args.format])
     except Exception as e:
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        log.error(u"failed with exception: %s", e)
+        log.error("failed with exception: {}".format(e))
         raise

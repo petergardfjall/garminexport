@@ -1,15 +1,14 @@
 import abc
-
-from datetime import datetime
-from datetime import timedelta
 import logging
 import time
+from datetime import datetime
+from datetime import timedelta
 
 log = logging.getLogger(__name__)
 
+
 class GaveUpError(Exception):
-    """Raised by a :class:`Retryer` that has exceeded its maximum number
-    of retries."""
+    """Raised by a :class:`Retryer` that has exceeded its maximum number of retries."""
     pass
 
 
@@ -22,8 +21,7 @@ class DelayStrategy(object):
     def next_delay(self, attempts):
         """Returns the time to wait before the next attempt.
 
-        :param attempts: The total number of (failed) attempts performed thus
-          far.
+        :param attempts: The total number of (failed) attempts performed thus far.
         :type attempts: int
 
         :return: The delay before the next attempt.
@@ -33,8 +31,8 @@ class DelayStrategy(object):
 
 
 class FixedDelayStrategy(DelayStrategy):
-    """A retry :class:`DelayStrategy` that produces a fixed delay between
-    attempts."""
+    """A retry :class:`DelayStrategy` that produces a fixed delay between attempts."""
+
     def __init__(self, delay):
         """
         :param delay: Attempt delay.
@@ -56,7 +54,7 @@ class ExponentialBackoffDelayStrategy(DelayStrategy):
     def __init__(self, initial_delay):
         """
         :param initial_delay: Initial delay.
-        :type delay: `timedelta`
+        :type initial_delay: `timedelta`
         """
         self.initial_delay = initial_delay
 
@@ -68,25 +66,21 @@ class ExponentialBackoffDelayStrategy(DelayStrategy):
 
 
 class NoDelayStrategy(FixedDelayStrategy):
-    """A retry :class:`DelayStrategy` that doesn't introduce any delay between
-    attempts."""
+    """A retry :class:`DelayStrategy` that doesn't introduce any delay between attempts."""
+
     def __init__(self):
         super(NoDelayStrategy, self).__init__(timedelta(seconds=0))
 
 
-
-
 class ErrorStrategy(object):
     """Used by a :class:`Retryer` to determine which errors are to be
-    suppressed and which errors are to be re-raised and thereby end the
-    (re)trying."""
+    suppressed and which errors are to be re-raised and thereby end the (re)trying."""
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def should_suppress(self, error):
         """Called after an attempt that raised an exception to determine if
-        that error should be suppressed (continue retrying) or be re-raised
-        (and end the retrying).
+        that error should be suppressed (continue retrying) or be re-raised (and end the retrying).
 
         :param error: Error that was raised from an attempt.
         """
@@ -122,13 +116,14 @@ class StopStrategy(object):
 
 class NeverStopStrategy(StopStrategy):
     """A :class:`StopStrategy` that never gives up."""
+
     def should_continue(self, attempts, elapsed_time):
         return True
 
 
 class MaxRetriesStopStrategy(StopStrategy):
-    """A :class:`StopStrategy` that gives up after a certain number of
-    retries."""
+    """A :class:`StopStrategy` that gives up after a certain number of retries."""
+
     def __init__(self, max_retries):
         self.max_retries = max_retries
 
@@ -149,6 +144,7 @@ class Retryer(object):
     to decide if the error should be suppressed or re-raised (in which case
     the retrying ends with that error).
     """
+
     def __init__(
             self,
             returnval_predicate=lambda returnval: True,
@@ -180,7 +176,6 @@ class Retryer(object):
         self.stop_strategy = stop_strategy
         self.error_strategy = error_strategy
 
-
     def call(self, function, *args, **kw):
         """Calls the given `function`, with the given arguments, repeatedly
         until either (1) a satisfactory result is obtained (as indicated by
@@ -200,24 +195,21 @@ class Retryer(object):
         while True:
             try:
                 attempts += 1
-                log.info('{%s}: attempt %d ...', name, attempts)
+                log.info('{{}}: attempt {} ...'.format(name, attempts))
                 returnval = function(*args, **kw)
                 if self.returnval_predicate(returnval):
                     # return value satisfies predicate, we're done!
-                    log.debug('{%s}: success: "%s"', name, returnval)
+                    log.debug('{{}}: success: "{}"'.format(name, returnval))
                     return returnval
-                log.debug('{%s}: failed: return value: %s', name, returnval)
+                log.debug('{{}}: failed: return value: {}'.format(name, returnval))
             except Exception as e:
                 if not self.error_strategy.should_suppress(e):
                     raise e
-                log.debug('{%s}: failed: error: %s', name, str(e))
+                log.debug('{{}}: failed: error: {}'.format(name, e))
             elapsed_time = datetime.now() - start
             # should we make another attempt?
             if not self.stop_strategy.should_continue(attempts, elapsed_time):
-                raise GaveUpError(
-                    '{%s}: gave up after %d failed attempt(s)' %
-                    (name, attempts))
+                raise GaveUpError('{{}}: gave up after {} failed attempt(s)'.format(name, attempts))
             delay = self.delay_strategy.next_delay(attempts)
-            log.info('{%s}: waiting %d seconds for next attempt' %
-                     (name, delay.total_seconds()))
+            log.info('{{}}: waiting {} seconds for next attempt'.format(name, delay.total_seconds()))
             time.sleep(delay.total_seconds())

@@ -8,7 +8,7 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
-export_formats=["json_summary", "json_details", "gpx", "tcx", "fit"]
+export_formats = ["json_summary", "json_details", "gpx", "tcx", "fit"]
 """The range of supported export formats for activities."""
 
 format_suffix = {
@@ -19,7 +19,6 @@ format_suffix = {
     "fit": ".fit"
 }
 """A table that maps export formats to their file format extensions."""
-
 
 not_found_file = ".not_found"
 """A file that lists all tried but failed export attempts. The lines in
@@ -48,7 +47,7 @@ def export_filename(activity, export_format):
         id=activity[0],
         time=activity[1].isoformat(),
         suffix=format_suffix[export_format])
-    return fn.replace(':','_') if os.name=='nt' else fn
+    return fn.replace(':', '_') if os.name == 'nt' else fn
 
 
 def need_backup(activities, backup_dir, export_formats=None):
@@ -64,6 +63,9 @@ def need_backup(activities, backup_dir, export_formats=None):
     :type activities: list of tuples of `(int, datetime)`
     :param backup_dir: Destination directory for exported activities.
     :type backup_dir: str
+    :keyword export_formats: Which format(s) to export to. Could be any
+      of: 'json_summary', 'json_details', 'gpx', 'tcx', 'fit'.
+    :type export_formats: list of str
     :return: All activities that need to be backed up.
     :rtype: set of tuples of `(int, datetime)`
     """
@@ -86,10 +88,8 @@ def _not_found_activities(backup_dir):
     if os.path.isfile(_not_found):
         with open(_not_found, mode="r") as f:
             failed_activities = [line.strip() for line in f.readlines()]
-    log.debug("%d tried but failed activities in %s",
-              len(failed_activities), _not_found)
+    log.debug("{} tried but failed activities in {}".format(len(failed_activities), _not_found))
     return failed_activities
-
 
 
 def download(client, activity, retryer, backup_dir, export_formats=None):
@@ -117,31 +117,27 @@ def download(client, activity, retryer, backup_dir, export_formats=None):
     id = activity[0]
 
     if 'json_summary' in export_formats:
-        log.debug("getting json summary for %s", id)
+        log.debug("getting json summary for {}".format(id))
 
         activity_summary = retryer.call(client.get_activity_summary, id)
         dest = os.path.join(
             backup_dir, export_filename(activity, 'json_summary'))
         with codecs.open(dest, encoding="utf-8", mode="w") as f:
-            f.write(json.dumps(
-                activity_summary, ensure_ascii=False, indent=4))
+            f.write(json.dumps(activity_summary, ensure_ascii=False, indent=4))
 
     if 'json_details' in export_formats:
-        log.debug("getting json details for %s", id)
+        log.debug("getting json details for {}".format(id))
         activity_details = retryer.call(client.get_activity_details, id)
-        dest = os.path.join(
-            backup_dir, export_filename(activity, 'json_details'))
+        dest = os.path.join(backup_dir, export_filename(activity, 'json_details'))
         with codecs.open(dest, encoding="utf-8", mode="w") as f:
-            f.write(json.dumps(
-                activity_details, ensure_ascii=False, indent=4))
+            f.write(json.dumps(activity_details, ensure_ascii=False, indent=4))
 
     not_found_path = os.path.join(backup_dir, not_found_file)
     with open(not_found_path, mode="a") as not_found:
         if 'gpx' in export_formats:
-            log.debug("getting gpx for %s", id)
+            log.debug("getting gpx for {}".format(id))
             activity_gpx = retryer.call(client.get_activity_gpx, id)
-            dest = os.path.join(
-                backup_dir, export_filename(activity, 'gpx'))
+            dest = os.path.join(backup_dir, export_filename(activity, 'gpx'))
             if activity_gpx is None:
                 not_found.write(os.path.basename(dest) + "\n")
             else:
@@ -149,10 +145,9 @@ def download(client, activity, retryer, backup_dir, export_formats=None):
                     f.write(activity_gpx)
 
         if 'tcx' in export_formats:
-            log.debug("getting tcx for %s", id)
+            log.debug("getting tcx for {}".format(id))
             activity_tcx = retryer.call(client.get_activity_tcx, id)
-            dest = os.path.join(
-                backup_dir, export_filename(activity, 'tcx'))
+            dest = os.path.join(backup_dir, export_filename(activity, 'tcx'))
             if activity_tcx is None:
                 not_found.write(os.path.basename(dest) + "\n")
             else:
@@ -160,7 +155,7 @@ def download(client, activity, retryer, backup_dir, export_formats=None):
                     f.write(activity_tcx)
 
         if 'fit' in export_formats:
-            log.debug("getting fit for %s", id)
+            log.debug("getting fit for {}".format(id))
             activity_fit = retryer.call(client.get_activity_fit, id)
             dest = os.path.join(
                 backup_dir, export_filename(activity, 'fit'))

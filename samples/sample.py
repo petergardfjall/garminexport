@@ -2,10 +2,10 @@
 
 import argparse
 import getpass
-from garminexport.garminclient import GarminClient
 import json
 import logging
-import sys
+
+from garminexport.garminclient import GarminClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
@@ -36,12 +36,12 @@ if __name__ == "__main__":
 
             latest_activity, latest_activity_start = activity_ids[0]
             activity = client.get_activity_summary(latest_activity)
-            log.info(u"activity id: %s", activity["activity"]["activityId"])
-            log.info(u"activity name: '%s'", activity["activity"]["activityName"])
-            log.info(u"activity description: '%s'", activity["activity"]["activityDescription"])
+            log.info("activity id: {}".format(activity["activity"]["activityId"]))
+            log.info("activity name: '{}'".format(activity["activity"]["activityName"]))
+            log.info("activity description: '{}'".format(activity["activity"]["activityDescription"]))
             log.info(json.dumps(client.get_activity_details(latest_activity), indent=4))
             log.info(client.get_activity_gpx(latest_activity))
     except Exception as e:
-        log.error(u"failed with exception: %s", e)
+        log.error("failed with exception: {}".format(e))
     finally:            
         log.info("done")

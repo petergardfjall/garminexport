@@ -7,7 +7,8 @@ from distutils.core import setup
 
 setup(name="Garmin Connect activity exporter",
       version="1.0.0",
-      description=("A program that downloads all activities for a given Garmin Connect account and stores them locally on the user's computer."),
+      description=("A program that downloads all activities for a given Garmin Connect account "
+                   "and stores them locally on the user's computer."),
       long_description=open('README.md').read(),
       author="Peter Gardfjäll",
       author_email="peter.gardfjall.work@gmail.com",
