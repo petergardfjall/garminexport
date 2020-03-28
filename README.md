@@ -1,7 +1,7 @@
 Garmin Connect activity backup tool
 ===================================
 
-[![Build Status](https://travis-ci.org/khrapovs/garminexport.svg?branch=master)](https://travis-ci.org/khrapovs/garminexport)
+[![Build Status](https://travis-ci.org/petergardfjall/garminexport.svg?branch=master)](https://travis-ci.org/petergardfjall/garminexport)
 
 ``garminbackup.py`` is a program that downloads activities for a
 given [Garmin Connect](http://connect.garmin.com/) account and stores
