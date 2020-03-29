@@ -23,6 +23,7 @@ if __name__ == "__main__":
                            password=args.password,
                            backup_dir=args.backup_dir,
                            format=args.format,
+                           ignore_errors=args.ignore_errors,
                            max_retries=args.max_retries)
 
     except Exception as e:
