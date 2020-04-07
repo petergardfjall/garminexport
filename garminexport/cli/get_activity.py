@@ -18,8 +18,8 @@ from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRe
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
-if __name__ == "__main__":
 
+def main():
     parser = argparse.ArgumentParser(
         description="Downloads one particular activity for a given Garmin Connect account.")
 

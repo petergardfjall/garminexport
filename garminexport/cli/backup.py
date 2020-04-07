@@ -1,7 +1,19 @@
+"""This script performs backups of activities for a Garmin Connect account.  The
+activities are stored in a local directory on the user's computer.  The backups
+are incremental, meaning that only activities that aren't already stored in the
+backup directory will be downloaded.
+
+"""
 import argparse
+import logging
 import os
 
 from garminexport.backup import export_formats
+from garminexport.incremental_backup import incremental_backup
+from garminexport.logging_config import LOG_LEVELS
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
+log = logging.getLogger(__name__)
 
 DEFAULT_MAX_RETRIES = 7
 """The default maximum number of retries to make when fetching a single activity."""
@@ -14,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     This object may be directly used by garminexport/garminbackup.py.
     """
     parser = argparse.ArgumentParser(
+        prog="garminbackup",
         description=(
             "Performs incremental backups of activities for a "
             "given Garmin Connect account. Only activities that "
@@ -48,3 +61,19 @@ def parse_args() -> argparse.Namespace:
               "will double with every retry, starting at one second. DEFAULT: {}").format(DEFAULT_MAX_RETRIES))
 
     return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    logging.root.setLevel(LOG_LEVELS[args.log_level])
+
+    try:
+        incremental_backup(username=args.username,
+                           password=args.password,
+                           backup_dir=args.backup_dir,
+                           format=args.format,
+                           ignore_errors=args.ignore_errors,
+                           max_retries=args.max_retries)
+
+    except Exception as e:
+        log.error("failed with exception: {}".format(e))

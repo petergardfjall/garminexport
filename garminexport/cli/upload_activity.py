@@ -1,6 +1,5 @@
 #! /usr/bin/env python
-"""A program that uploads an activity file to a Garmin
-Connect account.
+"""A program that uploads an activity file to a Garmin Connect account.
 """
 import argparse
 import getpass
@@ -12,8 +11,8 @@ from garminexport.logging_config import LOG_LEVELS
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
-if __name__ == "__main__":
 
+def main():
     parser = argparse.ArgumentParser(
         description="Uploads an activity file to a Garmin Connect account.")
 
