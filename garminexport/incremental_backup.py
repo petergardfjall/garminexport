@@ -35,7 +35,7 @@ def incremental_backup(username: str,
     """
     # if no --format was specified, all formats are to be backed up
     format = format if format else export_formats
-    log.info("backing up formats: {}".format(", ".join(format)))
+    log.info("backing up formats: %s", ", ".join(format))
 
     if not os.path.isdir(backup_dir):
         os.makedirs(backup_dir)
@@ -50,23 +50,23 @@ def incremental_backup(username: str,
 
     with GarminClient(username, password) as client:
         # get all activity ids and timestamps from Garmin account
-        log.info("scanning activities for {} ...".format(username))
+        log.info("scanning activities for %s ...", username)
         activities = set(retryer.call(client.list_activities))
-        log.info("account has a total of {} activities".format(len(activities)))
+        log.info("account has a total of %d activities", len(activities))
 
         missing_activities = garminexport.backup.need_backup(activities, backup_dir, format)
         backed_up = activities - missing_activities
-        log.info("{} contains {} backed up activities".format(backup_dir, len(backed_up)))
+        log.info("%s contains %d backed up activities", backup_dir, len(backed_up))
 
-        log.info("activities that aren't backed up: {}".format(len(missing_activities)))
+        log.info("activities that aren't backed up: %d", len(missing_activities))
 
         for index, activity in enumerate(missing_activities):
             id, start = activity
-            log.info("backing up activity {} from {} ({} out of {}) ...".format(
-                id, start, index + 1, len(missing_activities)))
+            log.info("backing up activity %s from %s (%d out of %d) ...",
+                     id, start, index + 1, len(missing_activities))
             try:
                 garminexport.backup.download(client, activity, retryer, backup_dir, format)
             except Exception as e:
-                log.error("failed with exception: {}".format(e))
+                log.error("failed with exception: %s", e)
                 if not ignore_errors:
                     raise

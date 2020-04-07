@@ -195,21 +195,21 @@ class Retryer(object):
         while True:
             try:
                 attempts += 1
-                log.info('{{}}: attempt {} ...'.format(name, attempts))
+                log.info('{%s}: attempt %d ...', name, attempts)
                 returnval = function(*args, **kw)
                 if self.returnval_predicate(returnval):
                     # return value satisfies predicate, we're done!
-                    log.debug('{{}}: success: "{}"'.format(name, returnval))
+                    log.debug('{%s}: success: "%s"', name, returnval)
                     return returnval
-                log.debug('{{}}: failed: return value: {}'.format(name, returnval))
+                log.debug('{%s}: failed: return value: %s', name, returnval)
             except Exception as e:
                 if not self.error_strategy.should_suppress(e):
                     raise e
-                log.debug('{{}}: failed: error: {}'.format(name, e))
+                log.debug('{%s}: failed: error: %s', name, e)
             elapsed_time = datetime.now() - start
             # should we make another attempt?
             if not self.stop_strategy.should_continue(attempts, elapsed_time):
                 raise GaveUpError('{{}}: gave up after {} failed attempt(s)'.format(name, attempts))
             delay = self.delay_strategy.next_delay(attempts)
-            log.info('{{}}: waiting {} seconds for next attempt'.format(name, delay.total_seconds()))
+            log.info('{%s}: waiting %d seconds for next attempt', name, delay.total_seconds())
             time.sleep(delay.total_seconds())

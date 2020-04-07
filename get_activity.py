@@ -64,7 +64,7 @@ if __name__ == "__main__":
             args.password = getpass.getpass("Enter password: ")
 
         with GarminClient(args.username, args.password) as client:
-            log.info("fetching activity {} ...".format(args.activity))
+            log.info("fetching activity %s ...", args.activity)
             summary = client.get_activity_summary(args.activity)
             # set up a retryer that will handle retries of failed activity downloads
             retryer = Retryer(
@@ -75,5 +75,5 @@ if __name__ == "__main__":
             garminexport.backup.download(
                 client, (args.activity, start_time), retryer, args.destination, export_formats=[args.format])
     except Exception as e:
-        log.error("failed with exception: {}".format(e))
+        log.error("failed with exception: %s", e)
         raise

@@ -116,11 +116,11 @@ class GarminClient(object):
         headers = {'origin': 'https://sso.garmin.com'}
         auth_response = self.session.post(
             SSO_LOGIN_URL, headers=headers, params=request_params, data=form_data)
-        log.debug("got auth response: {}".format(auth_response.text))
+        log.debug("got auth response: %s", auth_response.text)
         if auth_response.status_code != 200:
             raise ValueError("authentication failure: did you enter valid credentials?")
         auth_ticket_url = self._extract_auth_ticket_url(auth_response.text)
-        log.debug("auth ticket url: '{}'".format(auth_ticket_url))
+        log.debug("auth ticket url: '%s'", auth_ticket_url)
 
         log.info("claiming auth ticket ...")
         response = self.session.get(auth_ticket_url)
@@ -185,7 +185,7 @@ class GarminClient(object):
         :returns: A list of activity identifiers (along with their starting timestamps).
         :rtype: tuples of (int, datetime)
         """
-        log.debug("fetching activities {} through {} ...".format(start_index, start_index + max_limit - 1))
+        log.debug("fetching activities %d through %d ...", start_index, start_index + max_limit - 1)
         response = self.session.get(
             "https://connect.garmin.com/modern/proxy/activitylist-service/activities/search/activities",
             params={"start": start_index, "limit": max_limit})
@@ -205,7 +205,7 @@ class GarminClient(object):
             # make sure UTC timezone gets set
             timestamp_utc = timestamp_utc.replace(tzinfo=dateutil.tz.tzutc())
             entries.append((id, timestamp_utc))
-        log.debug("got {} activities.".format(len(entries)))
+        log.debug("got %d activities.", len(entries))
         return entries
 
     @require_session
@@ -222,8 +222,8 @@ class GarminClient(object):
         response = self.session.get(
             "https://connect.garmin.com/modern/proxy/activity-service/activity/{}".format(activity_id))
         if response.status_code != 200:
-            log.error(u"failed to fetch json summary for activity {}: {}\n{}".format(
-                activity_id, response.status_code, response.text))
+            log.error(u"failed to fetch json summary for activity %s: %d\n%s",
+                      activity_id, response.status_code, response.text)
             raise Exception(u"failed to fetch json summary for activity {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
         return json.loads(response.text)
