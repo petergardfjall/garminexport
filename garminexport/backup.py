@@ -8,7 +8,7 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
-export_formats = ["json_summary", "json_details", "gpx", "tcx", "fit"]
+supported_export_formats = ["json_summary", "json_details", "gpx", "tcx", "fit"]
 """The range of supported export formats for activities."""
 
 format_suffix = {

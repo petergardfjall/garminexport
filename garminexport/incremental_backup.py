@@ -5,7 +5,7 @@ import os
 from datetime import timedelta
 
 import garminexport.backup
-from garminexport.backup import export_formats
+from garminexport.backup import supported_export_formats
 from garminexport.garminclient import GarminClient
 from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 def incremental_backup(username: str,
                        password: str = None,
                        backup_dir: str = os.path.join(".", "activities"),
-                       format: str = 'ALL',
+                       export_formats: str = 'ALL',
                        ignore_errors: bool = False,
                        max_retries: int = 7):
     """Performs (incremental) backups of activities for a given Garmin Connect account.
@@ -23,7 +23,7 @@ def incremental_backup(username: str,
     :param username: Garmin Connect user name
     :param password: Garmin Connect user password. Default: None. If not provided, would be asked interactively.
     :param backup_dir: Destination directory for downloaded activities. Default: ./activities/".
-    :param format: Desired output formats (json_summary, json_details, gpx, tcx, fit). Default: ALL.
+    :param export_formats: Desired output formats (json_summary, json_details, gpx, tcx, fit). Default: ALL.
     :param ignore_errors: Ignore errors and keep going. Default: False.
     :param max_retries: The maximum number of retries to make on failed attempts to fetch an activity.
     Exponential backoff will be used, meaning that the delay between successive attempts
@@ -34,8 +34,8 @@ def incremental_backup(username: str,
     stored in the backup directory will be downloaded.
     """
     # if no --format was specified, all formats are to be backed up
-    format = format if format else export_formats
-    log.info("backing up formats: %s", ", ".join(format))
+    export_formats = export_formats if export_formats else supported_export_formats
+    log.info("backing up formats: %s", ", ".join(export_formats))
 
     if not os.path.isdir(backup_dir):
         os.makedirs(backup_dir)
@@ -54,7 +54,7 @@ def incremental_backup(username: str,
         activities = set(retryer.call(client.list_activities))
         log.info("account has a total of %d activities", len(activities))
 
-        missing_activities = garminexport.backup.need_backup(activities, backup_dir, format)
+        missing_activities = garminexport.backup.need_backup(activities, backup_dir, export_formats)
         backed_up = activities - missing_activities
         log.info("%s contains %d backed up activities", backup_dir, len(backed_up))
 
@@ -65,7 +65,7 @@ def incremental_backup(username: str,
             log.info("backing up activity %s from %s (%d out of %d) ...",
                      id, start, index + 1, len(missing_activities))
             try:
-                garminexport.backup.download(client, activity, retryer, backup_dir, format)
+                garminexport.backup.download(client, activity, retryer, backup_dir, export_formats)
             except Exception as e:
                 log.error("failed with exception: %s", e)
                 if not ignore_errors:

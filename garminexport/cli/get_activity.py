@@ -30,7 +30,7 @@ def main():
         "activity", metavar="<activity>", type=int, help="Activity ID.")
     parser.add_argument(
         "format", metavar="<format>", type=str,
-        help="Export format (one of: {}).".format(garminexport.backup.export_formats))
+        help="Export format (one of: {}).".format(garminexport.backup.supported_export_formats))
 
     # optional args
     parser.add_argument(
@@ -49,10 +49,10 @@ def main():
     if args.log_level not in LOG_LEVELS:
         raise ValueError("Illegal log-level argument: {}".format(args.log_level))
 
-    if args.format not in garminexport.backup.export_formats:
+    if args.format not in garminexport.backup.supported_export_formats:
         raise ValueError(
             "Unrecognized export format: '{}'. Must be one of {}".format(
-                args.format, garminexport.backup.export_formats))
+                args.format, garminexport.backup.supported_export_formats))
 
     logging.root.setLevel(LOG_LEVELS[args.log_level])
 

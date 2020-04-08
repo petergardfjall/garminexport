@@ -8,7 +8,7 @@ import argparse
 import logging
 import os
 
-from garminexport.backup import export_formats
+from garminexport.backup import supported_export_formats
 from garminexport.incremental_backup import incremental_backup
 from garminexport.logging_config import LOG_LEVELS
 
@@ -47,9 +47,9 @@ def parse_args() -> argparse.Namespace:
         help="Desired log output level (DEBUG, INFO, WARNING, ERROR). Default: INFO.",
         default="INFO")
     parser.add_argument(
-        "-f", "--format", choices=export_formats,
+        "-f", "--format", choices=supported_export_formats,
         default=None, action='append',
-        help="Desired output formats ({}). Default: ALL.".format(', '.join(export_formats)))
+        help="Desired output formats ({}). Default: ALL.".format(', '.join(supported_export_formats)))
     parser.add_argument(
         "-E", "--ignore-errors", action='store_true',
         help="Ignore errors and keep going. Default: FALSE")
@@ -71,7 +71,7 @@ def main():
         incremental_backup(username=args.username,
                            password=args.password,
                            backup_dir=args.backup_dir,
-                           format=args.format,
+                           export_formats=args.format,
                            ignore_errors=args.ignore_errors,
                            max_retries=args.max_retries)
 
