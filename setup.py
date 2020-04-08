@@ -12,9 +12,8 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 requires = [
-    'requests~=2.21',
+    'requests>=2.0,<3',
     'python-dateutil~=2.4',
-    'future~=0.16',
 ]
 
 test_requires = [
