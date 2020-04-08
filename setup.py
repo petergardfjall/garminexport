@@ -1,6 +1,6 @@
 """Setup information for the Garmin Connect activity exporter."""
 
-from setuptools import setup, find_packages
+from setuptools import setup, Extension
 from os import path
 # needed for Python 2.7 (ensures open() defaults to text mode with universal
 # newlines, and accepts an argument to specify the text encoding.
@@ -24,7 +24,7 @@ test_requires = [
 
 setup(name='garminexport',
       version='0.1.0',
-      description=('Garmin Connect activity exporter and backup tool'),
+      description='Garmin Connect activity exporter and backup tool',
       long_description=long_description,
       long_description_content_type='text/markdown',
       author='Peter Gardfjäll',
