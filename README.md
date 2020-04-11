@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/petergardfjall/garminexport.svg?branch=master)](https://travis-ci.org/petergardfjall/garminexport)
+[![PyPi release](https://img.shields.io/pypi/v/garminexport.svg)](https://img.shields.io/pypi/v/garminexport.svg)
 
 # About
 `garminexport` is both a library and a utility script for downloading/backing up
