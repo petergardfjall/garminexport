@@ -56,6 +56,11 @@ Supported export formats:
       format, mainly for storing GPS routes/tracks. It does support extensions
       and Garmin appears to annotate the GPS data with, for example, heart-rate
       and cadence, when available on your device.</sub>
+      
+  -   `kml`: activity KML file (Google Earth).
+
+      <sub>[KML](https://en.wikipedia.org/wiki/Keyhole_Markup_Language) is an XML
+      formatted file for annotating and visualizing maps with Google Earth.</sub>
 
   -   `tcx`: an activity TCX file (XML).
       *Note: a `.tcx` file may not always be possible to export, for example
