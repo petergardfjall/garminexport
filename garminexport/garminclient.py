@@ -413,8 +413,12 @@ class GarminClient(object):
 
         # failures
         elif len(j["failures"]) or len(j["successes"]) < 1:
-            raise Exception(u"failed to upload {} for activity: {}\n{}".format(
-                format, response.status_code, j["failures"]))
+            if len(j["failures"]) == 1 and response.status_code == 409:
+                log.info(u"duplicate activity uploaded, continuing")
+                activity_id = j["failures"][0]["internalId"]
+            else:
+                raise Exception(u"failed to upload {} for activity: {}\n{}".format(
+                    format, response.status_code, j["failures"]))
 
         # don't know how to handle multiple activities
         elif len(j["successes"]) > 1:
