@@ -10,6 +10,7 @@ import os.path
 import re
 import sys
 import zipfile
+import time
 from builtins import range
 from functools import wraps
 from io import BytesIO
@@ -392,15 +393,37 @@ class GarminClient(object):
             raise Exception(u"failed to upload {} for activity: {}\n{}".format(
                 format, response.status_code, response.text))
 
-        if len(j["failures"]) or len(j["successes"]) < 1:
+        # need to poll and wait for completion
+        if len(j["failures"]) == 0 and len(j["successes"]) == 0 and response.status_code == 202:
+            tries = 30
+            uuid = j["uploadUuid"]["uuid"].replace("-","")
+            date = j["creationDate"][:10] # "2020-01-01 12:34:56.789 GMT"
+            while tries and response.status_code == 202:
+                log.info(u"polling for upload completion every second ({} tries until timeout)...".format(tries))
+                time.sleep(1)
+                response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service/activity/status/{}/{}?_={}".format(
+                    date, uuid, int(time.time() * 1000)), headers={"nk": "NT"})
+                tries -= 1
+            if response.status_code == 201 and response.headers["location"]:
+                # location should be https://connectapi.garmin.com/activity-service/activity/ACTIVITY_ID
+                activity_id = response.headers["location"].split("/")[-1]
+            else:
+                raise Exception(u"timeout or failure while polling for upload completion: {}\n{}".format(
+                    response.status_code, response.text))
+
+        # failures
+        elif len(j["failures"]) or len(j["successes"]) < 1:
             raise Exception(u"failed to upload {} for activity: {}\n{}".format(
                 format, response.status_code, j["failures"]))
 
-        if len(j["successes"]) > 1:
+        # don't know how to handle multiple activities
+        elif len(j["successes"]) > 1:
             raise Exception(u"uploading {} resulted in multiple activities ({})".format(
                 format, len(j["successes"])))
 
-        activity_id = j["successes"][0]["internalId"]
+        # single activity
+        else:
+            activity_id = j["successes"][0]["internalId"]
 
         # add optional fields
         data = {}
