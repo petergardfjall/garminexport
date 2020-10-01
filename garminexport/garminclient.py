@@ -407,7 +407,7 @@ class GarminClient(object):
         if name is not None:
             data['activityName'] = name
         if description is not None:
-            data['description'] = name
+            data['description'] = description
         if activity_type is not None:
             data['activityTypeDTO'] = {"typeKey": activity_type}
         if private:
