@@ -388,11 +388,16 @@ class GarminClient(object):
         """Upload a GPX, TCX, or FIT file for an activity.
 
         :param file: Path or open file
-        :param format: File format (gpx, tcx, or fit); guessed from filename if None
+        :param format: File format (gpx, tcx, or fit); guessed from filename if :obj:`None`
+        :type format: str
         :param name: Optional name for the activity on Garmin Connect
+        :type name: str
         :param description: Optional description for the activity on Garmin Connect
+        :type description: str
         :param activity_type: Optional activityType key (lowercase: e.g. running, cycling)
+        :type activityType: str
         :param private: If true, then activity will be set as private.
+        :type private: bool
         :returns: ID of the newly-uploaded activity
         :rtype: int
         """
