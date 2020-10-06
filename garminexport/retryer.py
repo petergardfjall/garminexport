@@ -168,7 +168,7 @@ class Retryer(object):
         :param stop_strategy: determines when we are to stop retrying.
         :type stop_strategy: :class:`StopStrategy`
         :param error_strategy: determines which errors (if any) to suppress
-          when raised by the called function.
+          when raised by the called function (`None` to stop on any error).
         :type error_strategy: :class:`ErrorStrategy`
         """
         self.returnval_predicate = returnval_predicate
@@ -203,7 +203,7 @@ class Retryer(object):
                     return returnval
                 log.debug('{%s}: failed: return value: %s', name, returnval)
             except Exception as e:
-                if not self.error_strategy.should_suppress(e):
+                if self.error_strategy is None or not self.error_strategy.should_suppress(e):
                     raise e
                 log.debug('{%s}: failed: error: %s', name, e)
             elapsed_time = datetime.now() - start
