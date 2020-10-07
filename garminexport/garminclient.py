@@ -10,6 +10,7 @@ import os.path
 import re
 import sys
 import zipfile
+from datetime import timedelta, datetime
 from builtins import range
 from functools import wraps
 from io import BytesIO
@@ -17,6 +18,8 @@ from io import BytesIO
 import dateutil
 import dateutil.parser
 import requests
+
+from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
 #
 # Note: For more detailed information about the API services
@@ -355,15 +358,46 @@ class GarminClient(object):
         return orig_file if fmt == 'fit' else None
 
     @require_session
+    def _poll_upload_completion(self, uuid, creation_date):
+        """Poll for completion of an upload. If Garmin connect returns
+        HTTP status 202 ("Accepted") after initial upload, then we must poll
+        until the upload has either succeeded or failed. Raises an
+        :class:`Exception` if the upload has failed.
+
+        :param uuid: uploadUuid returned on initial upload.
+        :type uuid: str
+        :param creation_date: creationDate returned from initial upload (e.g.
+          "2020-01-01 12:34:56.789 GMT")
+        :type creation_date: str
+        :returns: Garmin's internalId for the newly-created activity, or
+          :obj:`None` if upload is still processing.
+        :rtype: int
+        """
+        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service/activity/status/{}/{}?_={}".format(
+            creation_date[:10], uuid.replace("-",""), int(datetime.now().timestamp()*1000)), headers={"nk": "NT"})
+        if response.status_code == 201 and response.headers["location"]:
+            # location should be https://connectapi.garmin.com/activity-service/activity/ACTIVITY_ID
+            return int(response.headers["location"].split("/")[-1])
+        elif response.status_code == 202:
+            return None # still processing
+        else:
+            response.raise_for_status()
+
+    @require_session
     def upload_activity(self, file, format=None, name=None, description=None, activity_type=None, private=None):
         """Upload a GPX, TCX, or FIT file for an activity.
 
         :param file: Path or open file
-        :param format: File format (gpx, tcx, or fit); guessed from filename if None
+        :param format: File format (gpx, tcx, or fit); guessed from filename if :obj:`None`
+        :type format: str
         :param name: Optional name for the activity on Garmin Connect
+        :type name: str
         :param description: Optional description for the activity on Garmin Connect
+        :type description: str
         :param activity_type: Optional activityType key (lowercase: e.g. running, cycling)
+        :type activityType: str
         :param private: If true, then activity will be set as private.
+        :type private: bool
         :returns: ID of the newly-uploaded activity
         :rtype: int
         """
@@ -392,15 +426,34 @@ class GarminClient(object):
             raise Exception(u"failed to upload {} for activity: {}\n{}".format(
                 format, response.status_code, response.text))
 
-        if len(j["failures"]) or len(j["successes"]) < 1:
-            raise Exception(u"failed to upload {} for activity: {}\n{}".format(
-                format, response.status_code, j["failures"]))
+        # single activity, immediate success
+        if len(j["successes"]) == 1 and len(j["failures"]) == 0:
+            activity_id = j["successes"][0]["internalId"]
 
-        if len(j["successes"]) > 1:
+        # duplicate of existing activity
+        elif len(j["failures"]) == 1 and len(j["successes"]) == 0 and response.status_code == 409:
+            log.info(u"duplicate activity uploaded, continuing")
+            activity_id = j["failures"][0]["internalId"]
+
+        # need to poll until success/failure
+        elif len(j["failures"]) == 0 and len(j["successes"]) == 0 and response.status_code == 202:
+            retryer = Retryer(
+                returnval_predicate=bool,
+                delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=1)),
+                stop_strategy=MaxRetriesStopStrategy(6), # wait for up to 64 seconds (2**6)
+                error_strategy=None
+            )
+            activity_id = retryer.call(self._poll_upload_completion, j["uploadUuid"]["uuid"], j["creationDate"])
+
+        # don't know how to handle multiple activities
+        elif len(j["successes"]) > 1:
             raise Exception(u"uploading {} resulted in multiple activities ({})".format(
                 format, len(j["successes"])))
 
-        activity_id = j["successes"][0]["internalId"]
+        # all other errors
+        else:
+            raise Exception(u"failed to upload {} for activity: {}\n{}".format(
+                format, response.status_code, j["failures"]))
 
         # add optional fields
         data = {}
