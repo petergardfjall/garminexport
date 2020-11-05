@@ -335,7 +335,7 @@ class GarminClient(object):
         zip_file = zipfile.ZipFile(BytesIO(response.content), mode="r")
         for path in zip_file.namelist():
             fn, ext = os.path.splitext(path)
-            if fn == str(activity_id):
+            if fn.startswith(str(activity_id)):
                 return ext[1:], zip_file.open(path).read()
         return None, None
 
