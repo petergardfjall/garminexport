@@ -154,18 +154,22 @@ class GarminClient(object):
         return auth_ticket_url
 
     @require_session
-    def list_activities(self):
-        """Return all activity ids stored by the logged in user, along
+    def list_activities(self, request_size=sys.maxsize):
+        """Return activity ids stored by the logged in user, along
         with their starting timestamps.
 
+        :param request_size: number of activities to return, default is all
+        :type request_size: int
         :returns: The full list of activity identifiers (along with their starting timestamps).
         :rtype: tuples of (int, datetime)
         """
         ids = []
         batch_size = 100
+        if request_size < batch_size:
+            batch_size = request_size
         # fetch in batches since the API doesn't allow more than a certain
         # number of activities to be retrieved on every invocation
-        for start_index in range(0, sys.maxsize, batch_size):
+        for start_index in range(0, request_size, batch_size):
             next_batch = self._fetch_activity_ids_and_ts(start_index, batch_size)
             if not next_batch:
                 break
