@@ -75,9 +75,9 @@ class GarminClient(object):
 
     Example of use: ::
       with GarminClient("my.sample@sample.com", "secretpassword") as client:
-          ids = client.list_activity_ids()
+          ids = client.list_activities()
           for activity_id in ids:
-               gpx = client.get_activity_gpx(activity_id)
+               gpx = client.get_activity_gpx(activity_id[0])
 
     """
 
