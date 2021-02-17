@@ -59,6 +59,12 @@ def parse_args() -> argparse.Namespace:
         help=("The maximum number of retries to make on failed attempts to fetch an activity. "
               "Exponential backoff will be used, meaning that the delay between successive attempts "
               "will double with every retry, starting at one second. DEFAULT: {}").format(DEFAULT_MAX_RETRIES))
+    parser.add_argument(
+        "--from-date", metavar="FROM", type=str,
+        help="Lower bound for activity start date. Format yyyymmdd. Comparison in UTC.")
+    parser.add_argument(
+        "--to-date", metavar="TO", type=str,
+        help="Upper bound for activity start date. Format yyyymmdd. Comparison in UTC.")
 
     return parser.parse_args()
 
@@ -73,7 +79,9 @@ def main():
                            backup_dir=args.backup_dir,
                            export_formats=args.format,
                            ignore_errors=args.ignore_errors,
-                           max_retries=args.max_retries)
+                           max_retries=args.max_retries,
+                           from_date=args.from_date,
+                           to_date=args.to_date)
 
     except Exception as e:
         log.error("failed with exception: {}".format(e))
