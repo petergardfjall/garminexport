@@ -190,7 +190,7 @@ class GarminClient(object):
         """
         log.debug("fetching activities %d through %d ...", start_index, start_index + max_limit - 1)
         response = self.session.get(
-            "https://connect.garmin.com/modern/proxy/activitylist-service/activities/search/activities",
+            "https://connect.garmin.com/proxy/activitylist-service/activities/search/activities",
             params={"start": start_index, "limit": max_limit})
         if response.status_code != 200:
             raise Exception(
@@ -223,7 +223,7 @@ class GarminClient(object):
         :rtype: dict
         """
         response = self.session.get(
-            "https://connect.garmin.com/modern/proxy/activity-service/activity/{}".format(activity_id))
+            "https://connect.garmin.com/proxy/activity-service/activity/{}".format(activity_id))
         if response.status_code != 200:
             log.error(u"failed to fetch json summary for activity %s: %d\n%s",
                       activity_id, response.status_code, response.text)
@@ -244,7 +244,7 @@ class GarminClient(object):
         """
         # mounted at xml or json depending on result encoding
         response = self.session.get(
-            "https://connect.garmin.com/modern/proxy/activity-service/activity/{}/details".format(activity_id))
+            "https://connect.garmin.com/proxy/activity-service/activity/{}/details".format(activity_id))
         if response.status_code != 200:
             raise Exception(u"failed to fetch json activityDetails for {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
