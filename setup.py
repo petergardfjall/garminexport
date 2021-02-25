@@ -23,7 +23,7 @@ test_requires = [
 ]
 
 setup(name='garminexport',
-      version='0.2.0',
+      version='0.3.0',
       description='Garmin Connect activity exporter and backup tool',
       long_description=long_description,
       long_description_content_type='text/markdown',
