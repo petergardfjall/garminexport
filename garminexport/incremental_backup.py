@@ -3,7 +3,6 @@ import getpass
 import logging
 import os
 from datetime import timedelta
-from typing import List
 
 import garminexport.backup
 from garminexport.backup import supported_export_formats
@@ -16,7 +15,7 @@ log = logging.getLogger(__name__)
 def incremental_backup(username: str,
                        password: str = None,
                        backup_dir: str = os.path.join(".", "activities"),
-                       export_formats: List[str] = None,
+                       export_formats: str = 'ALL',
                        ignore_errors: bool = False,
                        max_retries: int = 7):
     """Performs (incremental) backups of activities for a given Garmin Connect account.
@@ -24,8 +23,7 @@ def incremental_backup(username: str,
     :param username: Garmin Connect user name
     :param password: Garmin Connect user password. Default: None. If not provided, would be asked interactively.
     :param backup_dir: Destination directory for downloaded activities. Default: ./activities/".
-    :param export_formats: List of desired output formats (json_summary, json_details, gpx, tcx, fit).
-    Default: `None` which means all supported formats will be backed up.
+    :param export_formats: Desired output formats (json_summary, json_details, gpx, kml, tcx, fit). Default: ALL.
     :param ignore_errors: Ignore errors and keep going. Default: False.
     :param max_retries: The maximum number of retries to make on failed attempts to fetch an activity.
     Exponential backoff will be used, meaning that the delay between successive attempts

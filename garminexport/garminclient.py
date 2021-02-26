@@ -309,6 +309,31 @@ class GarminClient(object):
         return response.text
 
     @require_session
+    def get_activity_kml(self, activity_id):
+        """Return a KML (Keyhole Markup Language) representation of a
+        given activity. If the activity cannot be exported to KML
+        (not yet observed in practice, but that doesn't exclude the
+        possibility), a :obj:`None` value is returned.
+
+        :param activity_id: Activity identifier.
+        :type activity_id: int
+        :returns: The KML representation of the activity as an KML string
+          or ``None`` if the activity couldn't be exported to KML.
+        :rtype: str
+        """
+        response = self.session.get(
+            "https://connect.garmin.com/modern/proxy/download-service/export/kml/activity/{}".format(activity_id))
+        # A 404 (Not Found) or 204 (No Content) response are both indicators
+        # of a kml file not being available for the activity. It may, for
+        # example be a manually entered activity without any device data.
+        if response.status_code in (404, 204):
+            return None
+        if response.status_code != 200:
+            raise Exception(u"failed to fetch KML for activity {}: {}\n{}".format(
+                activity_id, response.status_code, response.text))
+        return response.text
+
+    @require_session
     def get_activity_tcx(self, activity_id):
         """Return a TCX (Training Center XML) representation of a
         given activity. If the activity doesn't have a TCX source (for
@@ -437,7 +462,7 @@ class GarminClient(object):
         fn = os.path.basename(file.name)
         _, ext = os.path.splitext(fn)
         if format is None:
-            if ext.lower() in ('.gpx', '.tcx', '.fit'):
+            if ext.lower() in ('.gpx', '.kml', '.tcx', '.fit'):
                 format = ext.lower()[1:]
             else:
                 raise Exception(u"could not guess file type for {}".format(fn))

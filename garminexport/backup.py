@@ -8,13 +8,14 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
-supported_export_formats = ["json_summary", "json_details", "gpx", "tcx", "fit"]
+supported_export_formats = ["json_summary", "json_details", "gpx", "kml", "tcx", "fit"]
 """The range of supported export formats for activities."""
 
 format_suffix = {
     "json_summary": "_summary.json",
     "json_details": "_details.json",
     "gpx": ".gpx",
+    "kml": ".kml",
     "tcx": ".tcx",
     "fit": ".fit"
 }
@@ -64,7 +65,7 @@ def need_backup(activities, backup_dir, export_formats=None):
     :param backup_dir: Destination directory for exported activities.
     :type backup_dir: str
     :keyword export_formats: Which format(s) to export to. Could be any
-      of: 'json_summary', 'json_details', 'gpx', 'tcx', 'fit'.
+      of: 'json_summary', 'json_details', 'gpx', 'kml', 'tcx', 'fit'.
     :type export_formats: list of str
     :return: All activities that need to be backed up.
     :rtype: set of tuples of `(int, datetime)`
@@ -111,7 +112,7 @@ def download(client, activity, retryer, backup_dir, export_formats=None):
     :param backup_dir: Backup directory path (assumed to exist already).
     :type backup_dir: str
     :keyword export_formats: Which format(s) to export to. Could be any
-      of: 'json_summary', 'json_details', 'gpx', 'tcx', 'fit'.
+      of: 'json_summary', 'json_details', 'gpx', 'kml', 'tcx', 'fit'.
     :type export_formats: list of str
     """
     id = activity[0]
@@ -143,6 +144,16 @@ def download(client, activity, retryer, backup_dir, export_formats=None):
             else:
                 with codecs.open(dest, encoding="utf-8", mode="w") as f:
                     f.write(activity_gpx)
+
+        if 'kml' in export_formats:
+            log.debug("getting kml for %s", id)
+            activity_kml = retryer.call(client.get_activity_kml, id)
+            dest = os.path.join(backup_dir, export_filename(activity, 'kml'))
+            if activity_kml is None:
+                not_found.write(os.path.basename(dest) + "\n")
+            else:
+                with codecs.open(dest, encoding="utf-8", mode="w") as f:
+                    f.write(activity_kml)
 
         if 'tcx' in export_formats:
             log.debug("getting tcx for %s", id)
