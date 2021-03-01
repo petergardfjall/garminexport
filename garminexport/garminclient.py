@@ -114,7 +114,7 @@ class GarminClient(object):
             "embed": "false"
         }
         request_params = {
-            "service": "https://connect.garmin.com/modern"
+            "service": "https://connect.garmin.com/"
         }
         headers = {'origin': 'https://sso.garmin.com'}
         auth_response = self.session.post(
@@ -142,7 +142,7 @@ class GarminClient(object):
         authentication form submission. The auth ticket URL is typically
         of form:
 
-          https://connect.garmin.com/modern?ticket=ST-0123456-aBCDefgh1iJkLmN5opQ9R-cas
+          https://connect.garmin.com/?ticket=ST-0123456-aBCDefgh1iJkLmN5opQ9R-cas
 
         :param auth_response: HTML response from an auth form submission.
         """
@@ -227,7 +227,7 @@ class GarminClient(object):
         :rtype: dict
         """
         response = self.session.get(
-            "https://connect.garmin.com/modern/proxy/activity-service/activity/{}".format(activity_id))
+            "https://connect.garmin.com/proxy/activity-service/activity/{}".format(activity_id))
         if response.status_code != 200:
             log.error(u"failed to fetch json summary for activity %s: %d\n%s",
                       activity_id, response.status_code, response.text)
@@ -248,7 +248,7 @@ class GarminClient(object):
         """
         # mounted at xml or json depending on result encoding
         response = self.session.get(
-            "https://connect.garmin.com/modern/proxy/activity-service/activity/{}/details".format(activity_id))
+            "https://connect.garmin.com/proxy/activity-service/activity/{}/details".format(activity_id))
         if response.status_code != 200:
             raise Exception(u"failed to fetch json activityDetails for {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
@@ -268,7 +268,7 @@ class GarminClient(object):
         :rtype: str
         """
         response = self.session.get(
-            "https://connect.garmin.com/modern/proxy/download-service/export/gpx/activity/{}".format(activity_id))
+            "https://connect.garmin.com/proxy/download-service/export/gpx/activity/{}".format(activity_id))
         # An alternate URL that seems to produce the same results
         # and is the one used when exporting through the Garmin
         # Connect web page.
@@ -300,7 +300,7 @@ class GarminClient(object):
         """
 
         response = self.session.get(
-            "https://connect.garmin.com/modern/proxy/download-service/export/tcx/activity/{}".format(activity_id))
+            "https://connect.garmin.com/proxy/download-service/export/tcx/activity/{}".format(activity_id))
         if response.status_code == 404:
             return None
         if response.status_code != 200:
@@ -321,7 +321,7 @@ class GarminClient(object):
         :rtype: (str, str)
         """
         response = self.session.get(
-            "https://connect.garmin.com/modern/proxy/download-service/files/activity/{}".format(activity_id))
+            "https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
         # A 404 (Not Found) response is a clear indicator of a missing .fit
         # file. As of lately, the endpoint appears to have started to
         # respond with 500 "NullPointerException" on attempts to download a
@@ -377,7 +377,7 @@ class GarminClient(object):
           :obj:`None` if upload is still processing.
         :rtype: int
         """
-        response = self.session.get("https://connect.garmin.com/modern/proxy/activity-service/activity/status/{}/{}?_={}".format(
+        response = self.session.get("https://connect.garmin.com/proxy/activity-service/activity/status/{}/{}?_={}".format(
             creation_date[:10], uuid.replace("-",""), int(datetime.now().timestamp()*1000)), headers={"nk": "NT"})
         if response.status_code == 201 and response.headers["location"]:
             # location should be https://connectapi.garmin.com/activity-service/activity/ACTIVITY_ID
@@ -420,7 +420,7 @@ class GarminClient(object):
 
         # upload it
         files = dict(data=(fn, file))
-        response = self.session.post("https://connect.garmin.com/modern/proxy/upload-service/upload/.{}".format(format),
+        response = self.session.post("https://connect.garmin.com/proxy/upload-service/upload/.{}".format(format),
                                      files=files, headers={"nk": "NT"})
 
         # check response and get activity ID
