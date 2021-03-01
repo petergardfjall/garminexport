@@ -194,7 +194,7 @@ class GarminClient(object):
         """
         log.debug("fetching activities %d through %d ...", start_index, start_index + max_limit - 1)
         response = self.session.get(
-            "https://connect.garmin.com/modern/proxy/activitylist-service/activities/search/activities",
+            "https://connect.garmin.com/proxy/activitylist-service/activities/search/activities",
             params={"start": start_index, "limit": max_limit})
         if response.status_code != 200:
             raise Exception(
