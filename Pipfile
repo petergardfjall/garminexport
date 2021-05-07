@@ -7,6 +7,7 @@ verify_ssl = true
 garminexport = {path = ".",editable = true}
 requests = ">=2.0,<3"
 python-dateutil = ">=2.0,<3"
+fake-useragent = ">=0.1.11"
 
 [dev-packages]
 nose = "~=1.3"
