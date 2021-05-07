@@ -18,6 +18,7 @@ from io import BytesIO
 import dateutil
 import dateutil.parser
 import requests
+from fake_useragent import UserAgent
 
 from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
@@ -35,6 +36,10 @@ from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRe
 #   https://github.com/cpfair/tapiriik/blob/master/tapiriik/services/GarminConnect/garminconnect.py
 #   https://forums.garmin.com/showthread.php?72150-connect-garmin-com-signin-question/page2
 #
+
+def gen_user_agent():
+    ua = UserAgent()
+    return ua.random
 
 log = logging.getLogger(__name__)
 
@@ -118,7 +123,9 @@ class GarminClient(object):
             "embed": "false",
             "_csrf": self._get_csrf_token(),
         }
-        headers = {'origin': 'https://sso.garmin.com'}
+        headers = {
+            'origin': 'https://sso.garmin.com',
+            'User-Agent': gen_user_agent()}
         auth_response = self.session.post(
             SSO_SIGNIN_URL, headers=headers, params=self._auth_params(), data=form_data)
         log.debug("got auth response: %s", auth_response.text)
