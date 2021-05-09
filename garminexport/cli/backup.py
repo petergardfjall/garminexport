@@ -18,6 +18,10 @@ log = logging.getLogger(__name__)
 DEFAULT_MAX_RETRIES = 7
 """The default maximum number of retries to make when fetching a single activity."""
 
+DEFAULT_USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'
+"""The default `User-Agent` to use for HTTP requests when none is supplied by
+the user.
+"""
 
 def parse_args() -> argparse.Namespace:
     """Parse CLI arguments.
@@ -59,6 +63,9 @@ def parse_args() -> argparse.Namespace:
         help=("The maximum number of retries to make on failed attempts to fetch an activity. "
               "Exponential backoff will be used, meaning that the delay between successive attempts "
               "will double with every retry, starting at one second. DEFAULT: {}").format(DEFAULT_MAX_RETRIES))
+    parser.add_argument(
+        "--user-agent", type=str, default=DEFAULT_USER_AGENT,
+        help="A value to use for the `User-Agent` request header. Use an authentic browser agent string to prevent being blocked by Garmin. A tool such as `user_agent` (`ua`) can be used to generate such values.")
 
     return parser.parse_args()
 
@@ -70,6 +77,7 @@ def main():
     try:
         incremental_backup(username=args.username,
                            password=args.password,
+                           user_agent_fn=lambda:DEFAULT_USER_AGENT,
                            backup_dir=args.backup_dir,
                            export_formats=args.format,
                            ignore_errors=args.ignore_errors,

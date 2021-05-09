@@ -81,17 +81,26 @@ class GarminClient(object):
 
     """
 
-    def __init__(self, username, password):
+    def __init__(self, username, password, user_agent_fn=None):
         """Initialize a :class:`GarminClient` instance.
 
         :param username: Garmin Connect user name or email address.
         :type username: str
         :param password: Garmin Connect account password.
         :type password: str
+        :keyword user_agent_fn: A function that, when called, produces a
+        `User-Agent` string to be used as `User-Agent` for the remainder of the
+        session. If set to None, the default user agent of the http request
+        library is used.
+        :type user_agent_fn: Callable[[], str]
+
         """
         self.username = username
         self.password = password
+        self._user_agent_fn = user_agent_fn
+
         self.session = None
+
 
     def __enter__(self):
         self.connect()
@@ -118,7 +127,15 @@ class GarminClient(object):
             "embed": "false",
             "_csrf": self._get_csrf_token(),
         }
-        headers = {'origin': 'https://sso.garmin.com'}
+        headers = {
+            'origin': 'https://sso.garmin.com',
+        }
+        if self._user_agent_fn:
+            user_agent = self._user_agent_fn()
+            if not user_agent:
+                raise ValueError("user_agent_fn didn't produce a value")
+            headers['User-Agent'] = user_agent
+
         auth_response = self.session.post(
             SSO_SIGNIN_URL, headers=headers, params=self._auth_params(), data=form_data)
         log.debug("got auth response: %s", auth_response.text)
