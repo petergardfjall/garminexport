@@ -30,7 +30,7 @@ def incremental_backup(username: str,
     library is used.
     :type user_agent_fn: Callable[[], str]
     :param backup_dir: Destination directory for downloaded activities. Default: ./activities/".
-    :param export_formats: List of desired output formats (json_summary, json_details, gpx, tcx, fit).
+    :param export_formats: List of desired output formats (json_summary, json_details, gpx, kml, tcx, fit).
     Default: `None` which means all supported formats will be backed up.
     :param ignore_errors: Ignore errors and keep going. Default: False.
     :param max_retries: The maximum number of retries to make on failed attempts to fetch an activity.
