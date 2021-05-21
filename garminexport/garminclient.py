@@ -18,6 +18,7 @@ from io import BytesIO
 import dateutil
 import dateutil.parser
 import requests
+import cloudscraper
 
 from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
@@ -110,7 +111,7 @@ class GarminClient(object):
         self.disconnect()
 
     def connect(self):
-        self.session = requests.Session()
+        self.session = cloudscraper.create_scraper()
         self._authenticate()
 
     def disconnect(self):
