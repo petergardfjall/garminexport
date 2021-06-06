@@ -96,7 +96,6 @@ class GarminClient(object):
         self._user_agent_fn = user_agent_fn
 
         domain = domain if domain is not None else "com"
-        print(domain)
         self.sso_host = "https://sso.garmin.{}".format(domain)
         self.connect_host = "https://connect.garmin.{}".format(domain)
 

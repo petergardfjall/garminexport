@@ -2,7 +2,6 @@
 """A program that uploads an activity file to a Garmin Connect account.
 """
 import argparse
-from garminexport import cli
 import getpass
 import logging
 
