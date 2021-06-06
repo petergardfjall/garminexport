@@ -2,6 +2,7 @@
 """A program that uploads an activity file to a Garmin Connect account.
 """
 import argparse
+from garminexport import cli
 import getpass
 import logging
 
@@ -38,6 +39,10 @@ def main():
         "--log-level", metavar="LEVEL", type=str,
         help="Desired log output level (DEBUG, INFO, WARNING, ERROR). Default: INFO.",
         default="INFO")
+    parser.add_argument(
+        "--domain", metavar="com", type=str,
+        help="Top level domain of your Garmin Connect website. Default: com.",
+        default="com")
 
     args = parser.parse_args()
 
@@ -53,7 +58,7 @@ def main():
         if not args.password:
             args.password = getpass.getpass("Enter password: ")
 
-        with GarminClient(args.username, args.password) as client:
+        with GarminClient(args.username, args.password, domain=args.domain) as client:
             for activity in args.activity:
                 log.info("uploading activity file %s ...", activity.name)
                 try:
@@ -62,7 +67,7 @@ def main():
                 except Exception as e:
                     log.error("upload failed: {!r}".format(e))
                 else:
-                    log.info("upload successful: https://connect.garmin.com/modern/activity/%s", id)
+                    log.info("upload successful: %s/modern/activity/%s", client.connect_host, id)
 
     except Exception as e:
         log.error("failed with exception: %s", e)

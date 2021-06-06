@@ -66,6 +66,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--user-agent", type=str, default=DEFAULT_USER_AGENT,
         help="A value to use for the `User-Agent` request header. Use an authentic browser agent string to prevent being blocked by Garmin. A tool such as `user_agent` (`ua`) can be used to generate such values.")
+    parser.add_argument(
+        "--domain", metavar="com", type=str,
+        help="Top level domain of your Garmin Connect website. Default: com.",
+        default="com")
 
     return parser.parse_args()
 
@@ -81,7 +85,8 @@ def main():
                            backup_dir=args.backup_dir,
                            export_formats=args.format,
                            ignore_errors=args.ignore_errors,
-                           max_retries=args.max_retries)
+                           max_retries=args.max_retries,
+                           domain=args.domain)
 
     except Exception as e:
         log.error("failed with exception: {}".format(e))

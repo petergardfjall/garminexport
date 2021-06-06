@@ -25,6 +25,10 @@ if __name__ == "__main__":
     # optional args
     parser.add_argument(
         "--password", type=str, help="Account password.")
+    parser.add_argument(
+        "--domain", metavar="com", type=str,
+        help="Top level domain of your Garmin Connect website. Default: com.",
+        default="com")
 
     args = parser.parse_args()
     print(args)
@@ -32,7 +36,7 @@ if __name__ == "__main__":
     if not args.password:
         args.password = getpass.getpass("Enter password: ")
         
-    client = GarminClient(args.username, args.password)
+    client = GarminClient(args.username, args.password, domain=args.domain)
     client.connect()
 
     print("client object ready for use.")
