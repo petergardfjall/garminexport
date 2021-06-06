@@ -23,7 +23,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--domain", metavar="com", type=str,
         help="Top level domain of your Garmin Connect website. Default: com.",
-        default="INFO")
+        default="com")
 
     args = parser.parse_args()
     print(args)
