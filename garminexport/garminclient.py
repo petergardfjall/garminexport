@@ -145,8 +145,7 @@ class GarminClient(object):
 
         auth_response = self.session.post(
             self.SSO_SIGNIN_URL, headers=headers, params=self._auth_params(), data=form_data)
-        log.debug(self.SSO_SIGNIN_URL, self._auth_params())
-        # log.debug("got auth response: %s", auth_response.text)
+        log.debug("got auth response: %s", auth_response.text)
         if auth_response.status_code != 200:
             raise ValueError("authentication failure: did you enter valid credentials?")
         auth_ticket_url = self._extract_auth_ticket_url(auth_response.text)
