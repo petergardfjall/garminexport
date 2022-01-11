@@ -17,7 +17,8 @@ from io import BytesIO
 
 import dateutil
 import dateutil.parser
-import requests
+#import requests
+from requests import Response
 import cloudscraper
 
 from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
@@ -82,7 +83,8 @@ class GarminClient(object):
 
     """
 
-    def __init__(self, username, password, user_agent_fn=None):
+    def __init__(self, username, password, user_agent_fn=None,
+                 retry_delay=1, max_retries=6):
         """Initialize a :class:`GarminClient` instance.
 
         :param username: Garmin Connect user name or email address.
@@ -98,8 +100,9 @@ class GarminClient(object):
         """
         self.username = username
         self.password = password
+        self.retry_delay = retry_delay
+        self.max_retries = max_retries
         self._user_agent_fn = user_agent_fn
-
         self.session = None
 
 
@@ -138,11 +141,16 @@ class GarminClient(object):
                 raise ValueError("user_agent_fn didn't produce a value")
             headers['User-Agent'] = user_agent
 
-        auth_response = self.session.post(
+        retryer = Retryer(
+            returnval_predicate=lambda r: r.status_code == 200,
+            delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=self.retry_delay)),
+            stop_strategy=MaxRetriesStopStrategy(self.max_retries), # wait for up to 64 seconds (2**6) when N=6
+            error_strategy=None
+        )
+        auth_response: Response = retryer.call(
+            self.session.post,
             SSO_SIGNIN_URL, headers=headers, params=self._auth_params(), data=form_data)
-        log.debug("got auth response: %s", auth_response.text)
-        if auth_response.status_code != 200:
-            raise ValueError("authentication failure: did you enter valid credentials?")
+
         auth_ticket_url = self._extract_auth_ticket_url(auth_response.text)
         log.debug("auth ticket url: '%s'", auth_ticket_url)
 
@@ -155,8 +163,7 @@ class GarminClient(object):
 
         # appears like we need to touch base with the main page to complete the
         # login ceremony.
-        self.session.get('https://connect.garmin.com/modern')
-
+        self.session.get('https://connect.garmin.com/modern/activities')
 
     def _get_csrf_token(self):
         """Retrieves a Cross-Site Request Forgery (CSRF) token from Garmin's login
@@ -220,6 +227,36 @@ class GarminClient(object):
         return ids
 
     @require_session
+    def fetch_activities(self, start_index, max_limit=100):
+        """Return a sequence of activities JSON dicts starting at a given index, with
+        index 0 being the user's most recently registered activity.
+
+        Should the index be out of bounds or the account empty, an empty list is returned.
+
+        :param start_index: The index of the first activity to retrieve.
+        :type start_index: int
+        :param max_limit: The (maximum) number of activities to retrieve.
+        :type max_limit: int
+
+        :returns: A list of activity JSON dicts describing the activity
+        :rtype: tuples of (int, datetime)
+
+        """
+        log.debug("fetching activities %d through %d ...", start_index, start_index + max_limit - 1)
+        response = self.session.get(
+            "https://connect.garmin.com/proxy/activitylist-service/activities/search/activities",
+            params={"start": start_index, "limit": max_limit})
+        if response.status_code != 200:
+            raise Exception(
+                u"failed to fetch activities {} to {} types: {}\n{}".format(
+                    start_index, (start_index + max_limit - 1), response.status_code, response.text))
+        activities = json.loads(response.text)
+        if not activities:
+            # index out of bounds or empty account
+            return []
+        return activities
+
+    @require_session
     def _fetch_activity_ids_and_ts(self, start_index, max_limit=100):
         """Return a sequence of activity ids (along with their starting
         timestamps) starting at a given index, with index 0 being the user's
@@ -235,19 +272,7 @@ class GarminClient(object):
         :returns: A list of activity identifiers (along with their starting timestamps).
         :rtype: tuples of (int, datetime)
         """
-        log.debug("fetching activities %d through %d ...", start_index, start_index + max_limit - 1)
-        response = self.session.get(
-            "https://connect.garmin.com/proxy/activitylist-service/activities/search/activities",
-            params={"start": start_index, "limit": max_limit})
-        if response.status_code != 200:
-            raise Exception(
-                u"failed to fetch activities {} to {} types: {}\n{}".format(
-                    start_index, (start_index + max_limit - 1), response.status_code, response.text))
-        activities = json.loads(response.text)
-        if not activities:
-            # index out of bounds or empty account
-            return []
-
+        activities = self.fetch_activities()
         entries = []
         for activity in activities:
             id = int(activity["activityId"])

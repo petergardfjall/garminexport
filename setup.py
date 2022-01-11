@@ -14,6 +14,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 requires = [
     'requests>=2.0,<3',
     'python-dateutil~=2.4',
+    'cloudscraper~=1.2.0',
 ]
 
 test_requires = [
