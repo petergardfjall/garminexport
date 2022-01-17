@@ -170,9 +170,19 @@ class GarminClient(object):
         page. The token is passed along in the login form for increased
         security."""
         log.info("fetching CSRF token ...")
-        resp = self.session.get(SSO_LOGIN_URL, params=self._auth_params())
+
+        retryer = Retryer(
+            returnval_predicate=lambda r: r.status_code == 200,
+            delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=self.retry_delay)),
+            stop_strategy=MaxRetriesStopStrategy(self.max_retries), # wait for up to 64 seconds (2**6) when N=6
+            error_strategy=None
+        )
+        resp: Response = retryer.call(
+            self.session.get, SSO_LOGIN_URL, params=self._auth_params())
+        # resp = self.session.get(SSO_LOGIN_URL, params=self._auth_params())
         if resp.status_code != 200:
             raise ValueError("auth failure: could not load {}".format(SSO_LOGIN_URL))
+
         # extract CSRF token
         csrf_token = re.search(r'<input type="hidden" name="_csrf" value="(\w+)"',
                                resp.content.decode('utf-8'))
