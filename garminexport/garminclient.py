@@ -179,7 +179,6 @@ class GarminClient(object):
         )
         resp: Response = retryer.call(
             self.session.get, SSO_LOGIN_URL, params=self._auth_params())
-        # resp = self.session.get(SSO_LOGIN_URL, params=self._auth_params())
         if resp.status_code != 200:
             raise ValueError("auth failure: could not load {}".format(SSO_LOGIN_URL))
 
