@@ -15,5 +15,8 @@ wheel:
 	@echo "wheel found at:"
 	find . -type f -name \*.whl
 
-reinstall:	wheel
+reinstall:	clean wheel
 	pip install `find . -type f -name \*.whl` --force-reinstall
+
+uninstall:
+	pip uninstall -y garminexport
