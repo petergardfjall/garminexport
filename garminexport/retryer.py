@@ -204,6 +204,7 @@ class Retryer(object):
                 log.debug('{%s}: failed: return value: %s', name, returnval)
             except Exception as e:
                 if self.error_strategy is None or not self.error_strategy.should_suppress(e):
+                    log.debug(f'not suppressing: {e} ({type(e)})')
                     raise e
                 log.debug('{%s}: failed: error: %s', name, e)
             elapsed_time = datetime.now() - start

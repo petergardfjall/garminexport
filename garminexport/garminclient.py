@@ -21,7 +21,16 @@ import dateutil.parser
 from requests import Response
 import cloudscraper
 
-from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
+from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy, SuppressAllErrorStrategy
+
+
+class GarminClientError(Exception):
+    pass
+
+
+class AuthenticateError(Exception):
+    pass
+
 
 #
 # Note: For more detailed information about the API services
@@ -84,7 +93,7 @@ class GarminClient(object):
     """
 
     def __init__(self, username, password, user_agent_fn=None,
-                 retry_delay=1, max_retries=6):
+                 retry_delay=3, max_retries=6):
         """Initialize a :class:`GarminClient` instance.
 
         :param username: Garmin Connect user name or email address.
@@ -115,7 +124,12 @@ class GarminClient(object):
 
     def connect(self):
         self.session = cloudscraper.create_scraper()
-        self._authenticate()
+        retryer = Retryer(
+            delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=self.retry_delay)),
+            stop_strategy=MaxRetriesStopStrategy(self.max_retries), # wait for up to 64 seconds (2**6) when N=6
+            error_strategy=SuppressAllErrorStrategy(),
+        )
+        retryer.call(self._authenticate)
 
     def disconnect(self):
         if self.session:
@@ -138,18 +152,16 @@ class GarminClient(object):
         if self._user_agent_fn:
             user_agent = self._user_agent_fn()
             if not user_agent:
-                raise ValueError("user_agent_fn didn't produce a value")
+                raise AuthenticateError("user_agent_fn didn't produce a value")
             headers['User-Agent'] = user_agent
 
-        retryer = Retryer(
-            returnval_predicate=lambda r: r.status_code == 200,
-            delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=self.retry_delay)),
-            stop_strategy=MaxRetriesStopStrategy(self.max_retries), # wait for up to 64 seconds (2**6) when N=6
-            error_strategy=None
-        )
-        auth_response: Response = retryer.call(
-            self.session.post,
-            SSO_SIGNIN_URL, headers=headers, params=self._auth_params(), data=form_data)
+        auth_response: Response = self.session.post(
+            SSO_SIGNIN_URL, headers=headers,
+            params=self._auth_params(), data=form_data)
+
+        if auth_response.status_code != 200:
+            raise AuthenticateError(
+                f'Could not SSO sign in: {auth_response.status_code}')
 
         auth_ticket_url = self._extract_auth_ticket_url(auth_response.text)
         log.debug("auth ticket url: '%s'", auth_ticket_url)
@@ -157,13 +169,15 @@ class GarminClient(object):
         log.info("claiming auth ticket ...")
         response = self.session.get(auth_ticket_url)
         if response.status_code != 200:
-            raise RuntimeError(
-                "auth failure: failed to claim auth ticket: {}: {}\n{}".format(
+            raise AuthenticateError(
+                "Auth failure: failed to claim auth ticket: {}: {}\n{}".format(
                     auth_ticket_url, response.status_code, response.text))
 
         # appears like we need to touch base with the main page to complete the
         # login ceremony.
         self.session.get('https://connect.garmin.com/modern/activities')
+
+        return True
 
     def _get_csrf_token(self):
         """Retrieves a Cross-Site Request Forgery (CSRF) token from Garmin's login
@@ -171,22 +185,15 @@ class GarminClient(object):
         security."""
         log.info("fetching CSRF token ...")
 
-        retryer = Retryer(
-            returnval_predicate=lambda r: r.status_code == 200,
-            delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=self.retry_delay)),
-            stop_strategy=MaxRetriesStopStrategy(self.max_retries), # wait for up to 64 seconds (2**6) when N=6
-            error_strategy=None
-        )
-        resp: Response = retryer.call(
-            self.session.get, SSO_LOGIN_URL, params=self._auth_params())
+        resp: Response = self.session.get(SSO_LOGIN_URL, params=self._auth_params())
         if resp.status_code != 200:
-            raise ValueError("auth failure: could not load {}".format(SSO_LOGIN_URL))
+            raise AuthenticateError("Could not load {}".format(SSO_LOGIN_URL))
 
         # extract CSRF token
         csrf_token = re.search(r'<input type="hidden" name="_csrf" value="(\w+)"',
                                resp.content.decode('utf-8'))
         if not csrf_token:
-            raise ValueError("auth failure: no CSRF token in {}".format(SSO_LOGIN_URL))
+            raise AuthenticateError("No CSRF token in {}".format(SSO_LOGIN_URL))
         return csrf_token.group(1)
 
     def _auth_params(self):
@@ -211,8 +218,8 @@ class GarminClient(object):
         """
         match = re.search(r'response_url\s*=\s*"(https:[^"]+)"', auth_response)
         if not match:
-            raise RuntimeError(
-                "auth failure: unable to extract auth ticket URL. did you provide a correct username/password?")
+            raise AuthenticateError(
+                "Unable to extract auth ticket URL. did you provide a correct username/password?")
         auth_ticket_url = match.group(1).replace("\\", "")
         return auth_ticket_url
 
@@ -256,8 +263,8 @@ class GarminClient(object):
             "https://connect.garmin.com/proxy/activitylist-service/activities/search/activities",
             params={"start": start_index, "limit": max_limit})
         if response.status_code != 200:
-            raise Exception(
-                u"failed to fetch activities {} to {} types: {}\n{}".format(
+            raise GarminClientError(
+                u"Failed to fetch activities {} to {} types: {}\n{}".format(
                     start_index, (start_index + max_limit - 1), response.status_code, response.text))
         activities = json.loads(response.text)
         if not activities:
