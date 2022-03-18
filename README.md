@@ -4,8 +4,9 @@
 ![PyPI - License](https://img.shields.io/pypi/l/garminexport)
 
 # About
-`garminexport` is both a library and a utility script for downloading/backing up
-[Garmin Connect](http://connect.garmin.com/) activities to a local disk.
+
+`garminexport` is both a library and a tool for downloading/backing up [Garmin
+Connect](http://connect.garmin.com/) activities to a local disk.
 
 The main utility script is called `garmin-backup` and performs incremental
 backups of your Garmin account to a local directory. The first time
@@ -15,16 +16,27 @@ activities that haven't already been downloaded to the backup directory.
 
 
 # Installation
+
 `garminexport` is available on [PyPi](https://pypi.org/) and can be installed
 with [pip](http://pip.readthedocs.org):
 
-    pip install garminexport
+``` bash
+pip install garminexport
+```
 
-It requires Python 3.5+.
+To install `garminexport` with support to circumvent Cloudflare's bot protection
+(which has been known to impact some users) you can install the module with the
+`cloudflare`
+[extra](https://setuptools.pypa.io/en/latest/userguide/dependency_management.html#optional-dependencies) like so:
 
+``` bash
+pip install garminexport[cloudflare]
+```
+
+This replaces the default [requests](https://github.com/psf/requests) library
+with [cloudscraper](https://github.com/VeNoMouS/cloudscraper) for HTTP request.
 
 # Usage
-
 
 ## Prerequisites
 To be of any use you need to register an account at [Garmin
@@ -36,7 +48,9 @@ Connect](http://connect.garmin.com/) and populate it with some activities.
 The backup program is run as follows (use the `--help` flag for a full list of
 available options):
 
-    garmin-backup --backup-dir=activities <username or email>
+``` bash
+garmin-backup --backup-dir=activities <username or email>
+```
 
 Once started, the program will prompt you for your account password and then log
 in to your Garmin Connect account to download activities to the specified backup
@@ -93,14 +107,12 @@ Supported export formats:
 All files are written to the same directory (`activities/` by default).  Each
 activity file is prefixed by its upload timestamp and its activity id.
 
-
 `garminexport` also contains a few smaller utility programs:
 
 - `garmin-get-activity`: download a single Garmin Connect activity. Run with
   `--help`for more details.
 - `garmin-upload-activity`: uplad a single Garmin Connect activity file (`.fit`,
   `.gpx`, or `.tcx`). Run with `--help`for more details.
-
 
 ## As a library
 
@@ -109,6 +121,21 @@ To build your own tools around the Garmin Connect API you can import the
 with Garmin Connect. For example use, have a look at the command-line tools
 under [garminexport/cli](garminexport/cli).
 
+For example, in your `setup.py`, `setup.cfg`, `pyproject.toml` ([PEP
+631](https://peps.python.org/pep-0631/)) add something like:
+
+``` python
+install_requires=[
+    'garminexport',
+    # also installs 'cloudscraper' as a dependency
+    # 'garminexport[cloudflare]',
+    ...
+]
+```
+
+Note: if you happen to have
+[cloudscraper](https://github.com/VeNoMouS/cloudscraper) on your `PACKAGEPATH`
+`GarminClient` will make use of it whenever it needs to make an HTTP request.
 
 # Contribute
 

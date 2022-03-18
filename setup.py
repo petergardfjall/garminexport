@@ -16,6 +16,10 @@ requires = [
     'python-dateutil~=2.4',
 ]
 
+extras_require = {
+    'cloudflare': ['cloudscraper~=1.2'],
+}
+
 test_requires = [
     'nose~=1.3',
     'coverage~=4.2',
@@ -59,6 +63,7 @@ setup(name='garminexport',
 
       python_requires='>=3.5.*, <4',
       install_requires=requires,
+      extras_require=extras_require,
       test_requires=test_requires,
       entry_points={
         'console_scripts': [

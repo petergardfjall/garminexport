@@ -17,7 +17,19 @@ from io import BytesIO
 
 import dateutil
 import dateutil.parser
+
+#
+# By default we use the requests library to create http clients. If built with
+# the 'cloudflare' extra, we use cloudscraper to circumvent CloudFlare's
+# anti-bot protection pages.
+#
 import requests
+session_factory = requests.session
+try:
+    import cloudscraper
+    session_factory = cloudscraper.create_scraper
+except (ImportError):
+    pass
 
 from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
@@ -110,7 +122,8 @@ class GarminClient(object):
         self.disconnect()
 
     def connect(self):
-        self.session = requests.Session()
+        log.debug("using session factory: %s", session_factory.__module__)
+        self.session = session_factory()
         self._authenticate()
 
     def disconnect(self):
@@ -230,7 +243,7 @@ class GarminClient(object):
         :param max_limit: The (maximum) number of activities to retrieve.
         :type max_limit: int
 
-        :returns: A list of activity identifiers (along with their starting timestamps).
+        :returns: A list of activity JSON dicts describing the activity
         :rtype: tuples of (int, datetime)
         """
         log.debug("fetching activities %d through %d ...", start_index, start_index + max_limit - 1)
