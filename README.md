@@ -139,11 +139,16 @@ Note: if you happen to have
 
 # Contribute
 
-To work on the code base you need (besides the basic prerequisites outlined
-above) to have [pipenv](https://github.com/pypa/pipenv) installed.  Create a
-`virtualenv` (an isolated development environment) and install the required
-dependencies like so:
+To start working on the code, create a virtual environment (an isolated
+development environment) and install the required dependencies like so:
 
+    # create virtualenv and populate it with library dependencies
+    make dev-init
 
-    make venv
-    # or similarly: pipenv install
+    # activate virtualenv
+    source .venv/bin/activate
+
+    # code ...
+
+    # test
+    make test
