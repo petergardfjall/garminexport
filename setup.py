@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env python
 """garminexport builder and installer."""
 from setuptools import setup
 
