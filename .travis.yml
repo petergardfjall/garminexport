@@ -2,7 +2,6 @@ language: python
 python:
   - "3.7"
 install:
-  - pip install pipenv
-  - pipenv install
+  - pip install -r requirements-dev.txt
 script:
   - python setup.py test
