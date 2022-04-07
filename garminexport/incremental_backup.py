@@ -19,7 +19,8 @@ def incremental_backup(username: str,
                        backup_dir: str = os.path.join(".", "activities"),
                        export_formats: List[str] = None,
                        ignore_errors: bool = False,
-                       max_retries: int = 7):
+                       max_retries: int = 7,
+                       domain: str = "com"):
     """Performs (incremental) backups of activities for a given Garmin Connect account.
 
     :param username: Garmin Connect user name
@@ -36,6 +37,8 @@ def incremental_backup(username: str,
     :param max_retries: The maximum number of retries to make on failed attempts to fetch an activity.
     Exponential backoff will be used, meaning that the delay between successive attempts
     will double with every retry, starting at one second. Default: 7.
+    :keyword domain: Top level domain of your Garmin Connect website. Default: com.
+    :type domain: str
 
     The activities are stored in a local directory on the user's computer.
     The backups are incremental, meaning that only activities that aren't already
@@ -57,7 +60,7 @@ def incremental_backup(username: str,
         delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=1)),
         stop_strategy=MaxRetriesStopStrategy(max_retries))
 
-    with GarminClient(username, password, user_agent_fn) as client:
+    with GarminClient(username, password, user_agent_fn, domain=domain) as client:
         # get all activity ids and timestamps from Garmin account
         log.info("scanning activities for %s ...", username)
         activities = set(retryer.call(client.list_activities))

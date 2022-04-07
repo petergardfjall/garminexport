@@ -43,6 +43,10 @@ def main():
         "--log-level", metavar="LEVEL", type=str,
         help="Desired log output level (DEBUG, INFO, WARNING, ERROR). Default: INFO.",
         default="INFO")
+    parser.add_argument(
+        "--domain", metavar="com", type=str,
+        help="Top level domain of your Garmin Connect website. Default: com.",
+        default="com")
 
     args = parser.parse_args()
 
@@ -63,7 +67,7 @@ def main():
         if not args.password:
             args.password = getpass.getpass("Enter password: ")
 
-        with GarminClient(args.username, args.password) as client:
+        with GarminClient(args.username, args.password, domain=args.domain) as client:
             log.info("fetching activity %s ...", args.activity)
             summary = client.get_activity_summary(args.activity)
             # set up a retryer that will handle retries of failed activity downloads
