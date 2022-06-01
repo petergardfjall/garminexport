@@ -10,8 +10,8 @@ import os.path
 import re
 import sys
 import zipfile
-from datetime import timedelta, datetime
 from builtins import range
+from datetime import timedelta, datetime
 from functools import wraps
 from io import BytesIO
 
@@ -31,7 +31,7 @@ try:
 except (ImportError):
     pass
 
-from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
+from garminexport.garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
 #
 # Note: For more detailed information about the API services
