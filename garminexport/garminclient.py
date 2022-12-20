@@ -58,6 +58,7 @@ SSO_LOGIN_URL = "https://sso.garmin.com/sso/login"
 SSO_SIGNIN_URL = "https://sso.garmin.com/sso/signin"
 """The Garmin Connect Single-Sign On sign-in URL. This is where the login form
 gets POSTed."""
+GARMIN_HEADERS = {"NK": "NT"}
 
 
 def require_session(client_function):
@@ -168,6 +169,8 @@ class GarminClient(object):
         # login ceremony.
         self.session.get('https://connect.garmin.com/modern')
 
+    def _session_get(self, url, **kw):
+        return self.session.get(url, headers=GARMIN_HEADERS, **kw)
 
     def _get_csrf_token(self):
         """Retrieves a Cross-Site Request Forgery (CSRF) token from Garmin's login
@@ -247,7 +250,7 @@ class GarminClient(object):
         :rtype: tuples of (int, datetime)
         """
         log.debug("fetching activities %d through %d ...", start_index, start_index + max_limit - 1)
-        response = self.session.get(
+        response = self._session_get(
             "https://connect.garmin.com/proxy/activitylist-service/activities/search/activities",
             params={"start": start_index, "limit": max_limit})
         if response.status_code != 200:
@@ -280,7 +283,7 @@ class GarminClient(object):
         :returns: The activity summary as a JSON dict.
         :rtype: dict
         """
-        response = self.session.get(
+        response = self._session_get(
             "https://connect.garmin.com/proxy/activity-service/activity/{}".format(activity_id))
         if response.status_code != 200:
             log.error(u"failed to fetch json summary for activity %s: %d\n%s",
@@ -301,7 +304,7 @@ class GarminClient(object):
         :rtype: dict
         """
         # mounted at xml or json depending on result encoding
-        response = self.session.get(
+        response = self._session_get(
             "https://connect.garmin.com/proxy/activity-service/activity/{}/details".format(activity_id))
         if response.status_code != 200:
             raise Exception(u"failed to fetch json activityDetails for {}: {}\n{}".format(
@@ -321,7 +324,7 @@ class GarminClient(object):
           or ``None`` if the activity couldn't be exported to GPX.
         :rtype: str
         """
-        response = self.session.get(
+        response = self._session_get(
             "https://connect.garmin.com/proxy/download-service/export/gpx/activity/{}".format(activity_id))
         # An alternate URL that seems to produce the same results
         # and is the one used when exporting through the Garmin
@@ -353,7 +356,7 @@ class GarminClient(object):
         :rtype: str
         """
 
-        response = self.session.get(
+        response = self._session_get(
             "https://connect.garmin.com/proxy/download-service/export/tcx/activity/{}".format(activity_id))
         if response.status_code == 404:
             return None
@@ -374,7 +377,7 @@ class GarminClient(object):
           its contents, or :obj:`(None,None)` if no file is found.
         :rtype: (str, str)
         """
-        response = self.session.get(
+        response = self._session_get(
             "https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
         # A 404 (Not Found) response is a clear indicator of a missing .fit
         # file. As of lately, the endpoint appears to have started to
@@ -431,7 +434,7 @@ class GarminClient(object):
           :obj:`None` if upload is still processing.
         :rtype: int
         """
-        response = self.session.get("https://connect.garmin.com/proxy/activity-service/activity/status/{}/{}?_={}".format(
+        response = self._session_get("https://connect.garmin.com/proxy/activity-service/activity/status/{}/{}?_={}".format(
             creation_date[:10], uuid.replace("-",""), int(datetime.now().timestamp()*1000)), headers={"nk": "NT"})
         if response.status_code == 201 and response.headers["location"]:
             # location should be https://connectapi.garmin.com/activity-service/activity/ACTIVITY_ID
