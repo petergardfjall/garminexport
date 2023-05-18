@@ -22,8 +22,8 @@ dev-init: dep-sync
 
 # update pinned versions of abstract dependencies from setup.py
 dep-update:
-	(source $(VENV_ACTIVATE) ; pip-compile --upgrade -o requirements.txt)
-	(source $(VENV_ACTIVATE) ; pip-compile --upgrade --extra test -o requirements-dev.txt)
+	(source $(VENV_ACTIVATE) ; pip-compile --upgrade --resolver=backtracking -o requirements.txt)
+	(source $(VENV_ACTIVATE) ; pip-compile --upgrade --resolver=backtracking --extra test -o requirements-dev.txt)
 
 
 # build release under 'dist/'
@@ -42,4 +42,7 @@ clean:
 	rm -rf build dist garminexport.egg-info
 
 test:
-	nosetests --verbose --with-coverage --cover-package=garminexport --cover-branches
+	pytest --cov=garminexport
+
+ci-test:
+	pytest tests --junitxml=report.xml
