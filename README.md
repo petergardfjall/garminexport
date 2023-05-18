@@ -1,3 +1,4 @@
+![Build badge](https://github.com/petergardfjall/garminexport/actions/workflows/run-tests.yaml/badge.svg)
 [![PyPi release](https://img.shields.io/pypi/v/garminexport.svg)](https://img.shields.io/pypi/v/garminexport.svg)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/garminexport)
 ![PyPI - License](https://img.shields.io/pypi/l/garminexport)
