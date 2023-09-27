@@ -4,7 +4,6 @@ import codecs
 import json
 import logging
 import os
-from datetime import datetime
 
 log = logging.getLogger(__name__)
 
