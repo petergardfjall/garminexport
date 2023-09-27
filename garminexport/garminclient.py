@@ -139,9 +139,6 @@ class GarminClient(object):
         except Exception as ex:
             raise ValueError("Authentication failure: {}. Did you enter correct credentials?".format(ex))
 
-        # appears like we need to touch base with the main page to complete the
-        # login ceremony.
-        self.session.get('https://connect.garmin.com/modern')
         # This header appears to be needed on subsequent session requests or we
         # end up with a 402 response from Garmin.
         self.session.headers.update({'NK': 'NT', 'authorization': garth.client.oauth2_token.__str__(), 'di-backend': 'connectapi.garmin.com'})
