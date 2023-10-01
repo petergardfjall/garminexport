@@ -12,7 +12,7 @@ venv: $(VENV_DIR)
 
 # install pinned dependencies and package itself in editable mode
 dep-sync: $(VENV_DIR)
-	(source $(VENV_ACTIVATE); pip install -r requirements-dev.txt ; pip install -e . --no-deps)
+	(source $(VENV_ACTIVATE); pip install -r requirements-dev.txt ; pip install -e .[impersonate_browser])
 
 # creates a virtualenv with development dependencies installed
 dev-init: dep-sync
