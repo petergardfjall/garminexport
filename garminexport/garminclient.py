@@ -117,6 +117,47 @@ class GarminClient(object):
         # end up with a 402 response from Garmin.
         self.session.headers.update({'NK': 'NT'})
 
+        # We need to pass an Authorization oauth token with subsequent requests.
+        auth_token = self._get_oauth_token()
+        token_type = auth_token['token_type']
+        access_token = auth_token['access_token']
+        self.session.headers.update(
+            {
+                'Authorization': f'{token_type} {access_token}',
+                'Di-Backend': 'connectapi.garmin.com',
+            })
+
+
+    def _get_oauth_token(self):
+        """Retrieve an OAuth token to use for the session.
+
+        Typically looks something like the following. The 'access_token'
+        needs to be passed in the 'Authorization' header for remaining session
+        requests.
+
+          {
+            "scope": "...",
+            "jti": "...",
+            "access_token": "...",
+            "token_type": "Bearer",
+            "refresh_token": "...",
+            "expires_in": 3599,
+            "refresh_token_expires_in": 7199
+          }
+        """
+        log.info("getting oauth token ...")
+        headers = {
+            'authority': 'connect.garmin.com',
+            'origin': 'https://connect.garmin.com',
+            'referer': 'https://connect.garmin.com/modern/',
+        }
+        resp = self.session.post('https://connect.garmin.com/modern/di-oauth/exchange',
+                                 headers=headers)
+        if resp.status_code != 200:
+            raise ValueError(f'get oauth token failed with {resp.status_code}: {resp.text}')
+        return resp.json()
+
+
     def _login(self, username, password):
         """Logs in with the supplied account credentials.
         The return value is a URL where the created authentication ticket can be claimed.
@@ -228,7 +269,7 @@ class GarminClient(object):
         """
         log.debug("fetching activities %d through %d ...", start_index, start_index + max_limit - 1)
         response = self.session.get(
-            "https://connect.garmin.com/proxy/activitylist-service/activities/search/activities",
+            "https://connect.garmin.com/activitylist-service/activities/search/activities",
             params={"start": start_index, "limit": max_limit})
         if response.status_code != 200:
             raise Exception(
@@ -261,7 +302,7 @@ class GarminClient(object):
         :rtype: dict
         """
         response = self.session.get(
-            "https://connect.garmin.com/proxy/activity-service/activity/{}".format(activity_id))
+            "https://connect.garmin.com/activity-service/activity/{}".format(activity_id))
         if response.status_code != 200:
             log.error(u"failed to fetch json summary for activity %s: %d\n%s",
                       activity_id, response.status_code, response.text)
@@ -282,7 +323,7 @@ class GarminClient(object):
         """
         # mounted at xml or json depending on result encoding
         response = self.session.get(
-            "https://connect.garmin.com/proxy/activity-service/activity/{}/details".format(activity_id))
+            "https://connect.garmin.com/activity-service/activity/{}/details".format(activity_id))
         if response.status_code != 200:
             raise Exception(u"failed to fetch json activityDetails for {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
@@ -302,7 +343,7 @@ class GarminClient(object):
         :rtype: str
         """
         response = self.session.get(
-            "https://connect.garmin.com/proxy/download-service/export/gpx/activity/{}".format(activity_id))
+            "https://connect.garmin.com/download-service/export/gpx/activity/{}".format(activity_id))
         # An alternate URL that seems to produce the same results
         # and is the one used when exporting through the Garmin
         # Connect web page.
@@ -334,7 +375,7 @@ class GarminClient(object):
         """
 
         response = self.session.get(
-            "https://connect.garmin.com/proxy/download-service/export/tcx/activity/{}".format(activity_id))
+            "https://connect.garmin.com/download-service/export/tcx/activity/{}".format(activity_id))
         if response.status_code == 404:
             return None
         if response.status_code != 200:
@@ -355,7 +396,7 @@ class GarminClient(object):
         :rtype: (str, str)
         """
         response = self.session.get(
-            "https://connect.garmin.com/proxy/download-service/files/activity/{}".format(activity_id))
+            "https://connect.garmin.com/download-service/files/activity/{}".format(activity_id))
         # A 404 (Not Found) response is a clear indicator of a missing .fit
         # file. As of lately, the endpoint appears to have started to
         # respond with 500 "NullPointerException" on attempts to download a
