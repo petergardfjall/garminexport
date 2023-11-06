@@ -395,7 +395,7 @@ class GarminClient(object):
         :rtype list
         """
         response = self.session.get(
-            f'https://connect.garmin.com/proxy/gear-service/gear/filterGear?activityId={activity_id}',
+            f'https://connect.garmin.com/gear-service/gear/filterGear?activityId={activity_id}',
         )
         if response.status_code == 400:
             return None
