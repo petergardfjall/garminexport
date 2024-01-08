@@ -43,7 +43,7 @@ you should install the module with the `impersonate_browser`
 like so:
 
 ```bash
-pip install garminexport[impersonate_browser]
+pip install 'garminexport[impersonate_browser]'
 ```
 
 This replaces the default [requests](https://github.com/psf/requests) library
