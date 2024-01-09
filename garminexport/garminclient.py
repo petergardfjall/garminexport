@@ -383,6 +383,29 @@ class GarminClient(object):
                 activity_id, response.status_code, response.text))
         return response.text
 
+    @require_session
+    def get_activity_gear(self, activity_id):
+        """Return a list of JSON objects describing the gear used in an activity,
+        if any. If there is no gear attached, the result will be an empty list.
+
+        :param activity_id: Activity identifier.
+        :type activity_id: int
+        :returns: The JSON object describing the gear or ``None`` if there is
+         no gear attached
+        :rtype list
+        """
+        response = self.session.get(
+            f'https://connect.garmin.com/gear-service/gear/filterGear?activityId={activity_id}',
+        )
+        if response.status_code == 400:
+            return None
+        if response.status_code != 200:
+            raise Exception(
+                f'failed to fetch gear for activity {activity_id}: {response.status_code}\n'
+                f'{response.text}'
+            )
+        return response.json()
+
     def get_original_activity(self, activity_id):
         """Return the original file that was uploaded for an activity.
         If the activity doesn't have any file source (for example,

@@ -8,12 +8,20 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
-supported_export_formats = ["json_summary", "json_details", "gpx", "tcx", "fit"]
+supported_export_formats = [
+    "json_summary",
+    "json_details",
+    "gear",
+    "gpx",
+    "tcx",
+    "fit",
+]
 """The range of supported export formats for activities."""
 
 format_suffix = {
     "json_summary": "_summary.json",
     "json_details": "_details.json",
+    "gear": "_gear.json",
     "gpx": ".gpx",
     "tcx": ".tcx",
     "fit": ".fit"
@@ -131,6 +139,13 @@ def download(client, activity, retryer, backup_dir, export_formats=None):
         dest = os.path.join(backup_dir, export_filename(activity, 'json_details'))
         with codecs.open(dest, encoding="utf-8", mode="w") as f:
             f.write(json.dumps(activity_details, ensure_ascii=False, indent=4))
+
+    if 'gear' in export_formats:
+        log.debug('getting gear for %s', id)
+        activity_gear = retryer.call(client.get_activity_gear, id)
+        dest = os.path.join(backup_dir, export_filename(activity, 'gear'))
+        with codecs.open(dest, encoding='utf-8', mode='w') as f:
+            f.write(json.dumps(activity_gear, ensure_ascii=False, indent=4))
 
     not_found_path = os.path.join(backup_dir, not_found_file)
     with open(not_found_path, mode="a") as not_found:

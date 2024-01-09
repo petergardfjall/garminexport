@@ -122,6 +122,14 @@ Supported export formats:
   any time). Only included since it _may_ contain additional data that could be
   useful for developers of analysis tools.</sub>
 
+- `gear`: gear used in an activity (JSON list).
+
+  <sub>Provides a list of the gear that's added to an activity (such as tracking
+  road versus mountain versus gravel bikes or different pairs of running shoes).
+  Seems to lack a formal schema and should not be counted on as a stable data
+  format (may change at any time). Only included since it _may_ contain additional
+  data that could be useful for developers of analysis tools.</sub>
+
 All files are written to the same directory (`activities/` by default). Each
 activity file is prefixed by its upload timestamp and its activity id.
 
