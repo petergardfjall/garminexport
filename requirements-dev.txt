@@ -28,7 +28,7 @@ pytest-cov==4.0.0
     # via garminexport (setup.py)
 python-dateutil==2.8.2
     # via garminexport (setup.py)
-requests==2.30.0
+requests==2.31.0
     # via garminexport (setup.py)
 six==1.16.0
     # via python-dateutil
