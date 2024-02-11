@@ -12,17 +12,13 @@ import json
 import logging
 import os
 import os.path
-import requests
+import garth
 import sys
 import zipfile
 
 from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
 
-
 log = logging.getLogger(__name__)
-# reduce logging noise from requests library
-logging.getLogger("requests").setLevel(logging.ERROR)
-
 
 PORTAL_LOGIN_URL = "https://sso.garmin.com/portal/api/login"
 """Garmin Connect's Single-Sign On login URL."""
@@ -41,7 +37,7 @@ def require_session(client_function):
     @wraps(client_function)
     def check_session(*args, **kwargs):
         client_object = args[0]
-        if not client_object.session:
+        if not client_object.gc:
             raise Exception("Attempt to use GarminClient without being connected. Call connect() before first use.'")
         return client_function(*args, **kwargs)
 
@@ -66,7 +62,7 @@ class GarminClient(object):
 
     """
 
-    def __init__(self, username, password):
+    def __init__(self, username=None, password=None):
         """Initialize a :class:`GarminClient` instance.
 
         :param username: Garmin Connect user name or email address.
@@ -76,8 +72,9 @@ class GarminClient(object):
         """
         self.username = username
         self.password = password
+        self.tokenpath = "~/.garminauth"
 
-        self.session = None
+        self.gc = None
 
 
     def __enter__(self):
@@ -88,13 +85,13 @@ class GarminClient(object):
         self.disconnect()
 
     def connect(self):
-        self.session = new_http_session()
+        self.gc = garth.client
         self._authenticate()
 
     def disconnect(self):
-        if self.session:
-            self.session.close()
-            self.session = None
+        if self.gc:
+            self.gc.dump(self.tokenpath)
+            self.gc = None
 
     def _authenticate(self):
         """
@@ -105,132 +102,15 @@ class GarminClient(object):
         following a sign-in.
         """
         log.info("authenticating user ...")
-
-        auth_ticket_url = self._login(self.username, self.password)
-        log.debug("auth ticket url: '%s'", auth_ticket_url)
-
-        self._claim_auth_ticket(auth_ticket_url)
-
-        # we need to touch base with the main page to complete the login ceremony.
-        self.session.get('https://connect.garmin.com/modern')
-        # This header appears to be needed on subsequent session requests or we
-        # end up with a 402 response from Garmin.
-        self.session.headers.update({'NK': 'NT'})
-
-        # We need to pass an Authorization oauth token with subsequent requests.
-        auth_token = self._get_oauth_token()
-        token_type = auth_token['token_type']
-        access_token = auth_token['access_token']
-        self.session.headers.update(
-            {
-                'Authorization': f'{token_type} {access_token}',
-                'Di-Backend': 'connectapi.garmin.com',
-            })
-
-
-    def _get_oauth_token(self):
-        """Retrieve an OAuth token to use for the session.
-
-        Typically looks something like the following. The 'access_token'
-        needs to be passed in the 'Authorization' header for remaining session
-        requests.
-
-          {
-            "scope": "...",
-            "jti": "...",
-            "access_token": "...",
-            "token_type": "Bearer",
-            "refresh_token": "...",
-            "expires_in": 3599,
-            "refresh_token_expires_in": 7199
-          }
-        """
-        log.info("getting oauth token ...")
-        headers = {
-            'authority': 'connect.garmin.com',
-            'origin': 'https://connect.garmin.com',
-            'referer': 'https://connect.garmin.com/modern/',
-        }
-        resp = self.session.post('https://connect.garmin.com/modern/di-oauth/exchange',
-                                 headers=headers)
-        if resp.status_code != 200:
-            raise ValueError(f'get oauth token failed with {resp.status_code}: {resp.text}')
-        return resp.json()
-
-
-    def _login(self, username, password):
-        """Logs in with the supplied account credentials.
-        The return value is a URL where the created authentication ticket can be claimed.
-        For example, "https://connect.garmin.com/modern?ticket=ST-2550833-30KdiEJ3jqvFzLNGi2C7-sso"
-
-        The response message looks typically something like this:
-          {
-             "serviceURL":"https://connect.garmin.com/modern/",
-             "serviceTicketId":"ST-2550833-30KdiEJ3jqvFzLNGi2C7-sso",
-             "responseStatus":{"type":"SUCCESSFUL","message":"","httpStatus":"OK"},
-             "customerMfaInfo":null,
-             "consentTypeList":null
-          }
-        """
-        headers = {
-            'authority': 'sso.garmin.com',
-            'origin': 'https://sso.garmin.com',
-            'referer': 'https://sso.garmin.com/portal/sso/en-US/sign-in?clientId=GarminConnect&service=https%3A%2F%2Fconnect.garmin.com%2Fmodern',
-        }
-        params = {
-            "clientId": "GarminConnect",
-            "service": "https://connect.garmin.com/modern/",
-            "gauthHost": "https://sso.garmin.com/sso",
-        }
-        form_data = {'username': username, 'password': password}
-
-        log.info("passing login credentials ...")
-        resp = self.session.post(PORTAL_LOGIN_URL, headers=headers, params=params, json=form_data)
-        log.debug("got auth response %d: %s", resp.status_code, resp.text)
-        if resp.status_code != 200:
-            raise ValueError(f'authentication attempt failed with {resp.status_code}: {resp.text}')
-        return self._extract_auth_ticket_url(resp.json())
-
-    def _claim_auth_ticket(self, auth_ticket_url):
-        # Note: first we bump the login URL.
-        p = {
-            'clientId': 'GarminConnect',
-            'service': 'https://connect.garmin.com/modern/',
-            'webhost': 'https://connect.garmin.com',
-            'gateway': 'true',
-            'generateExtraServiceTicket': 'true',
-            'generateTwoExtraServiceTickets': 'true',
-        }
-        self.session.get(SSO_LOGIN_URL, headers={}, params=p)
-
-        log.info("claiming auth ticket %s ...", auth_ticket_url)
-        response = self.session.get(auth_ticket_url)
-        if response.status_code != 200:
-            raise RuntimeError(
-                "auth failure: failed to claim auth ticket: {}: {}\n{}".format(
-                    auth_ticket_url, response.status_code, response.text))
-
-
-    @staticmethod
-    def _extract_auth_ticket_url(auth_response):
-        """Extracts an authentication ticket URL from the response of an
-        authentication form submission. The auth ticket URL is typically
-        of form:
-
-          https://connect.garmin.com/modern?ticket=ST-0123456-aBCDefgh1iJkLmN5opQ9R-cas
-
-        :param auth_response: JSON response from a login form submission.
-        """
-        if auth_response['responseStatus']['type'] == 'INVALID_USERNAME_PASSWORD':
-            RuntimeError("authentication failure: did you provide a correct username/password?")
-        service_url = auth_response.get('serviceURL')
-        auth_ticket = auth_response.get('serviceTicketId')
-        if not service_url:
-            raise RuntimeError("auth failure: unable to extract serviceURL")
-        if not auth_ticket:
-            raise RuntimeError("auth failure: unable to extract serviceTicketId")
-        auth_ticket_url = service_url.rstrip('/') + '?ticket=' + auth_ticket
-        return auth_ticket_url
+        try:
+            log.info("Checking for stored tokens at %s", self.tokenpath)
+            self.gc.load(self.tokenpath)
+            log.info("Tokens loaded.")
+            return
+        except Exception as e:
+            log.info("No tokens loaded (%s)", str(e))
+        self.gc.login(self.username, self.password)
+        log.info("Logged in with username and password.")
 
     @require_session
     def list_activities(self):
@@ -268,8 +148,8 @@ class GarminClient(object):
         :rtype: tuples of (int, datetime)
         """
         log.debug("fetching activities %d through %d ...", start_index, start_index + max_limit - 1)
-        response = self.session.get(
-            "https://connect.garmin.com/activitylist-service/activities/search/activities",
+        response = self.gc.get(
+            "connectapi", "/activitylist-service/activities/search/activities", api=True,
             params={"start": start_index, "limit": max_limit})
         if response.status_code != 200:
             raise Exception(
@@ -301,8 +181,8 @@ class GarminClient(object):
         :returns: The activity summary as a JSON dict.
         :rtype: dict
         """
-        response = self.session.get(
-            "https://connect.garmin.com/activity-service/activity/{}".format(activity_id))
+        response = self.gc.get(
+            "connectapi", "/activity-service/activity/{}".format(activity_id), api=True)
         if response.status_code != 200:
             log.error(u"failed to fetch json summary for activity %s: %d\n%s",
                       activity_id, response.status_code, response.text)
@@ -322,8 +202,8 @@ class GarminClient(object):
         :rtype: dict
         """
         # mounted at xml or json depending on result encoding
-        response = self.session.get(
-            "https://connect.garmin.com/activity-service/activity/{}/details".format(activity_id))
+        response = self.gc.get(
+            "connectapi", "/activity-service/activity/{}/details".format(activity_id), api=True)
         if response.status_code != 200:
             raise Exception(u"failed to fetch json activityDetails for {}: {}\n{}".format(
                 activity_id, response.status_code, response.text))
@@ -342,12 +222,12 @@ class GarminClient(object):
           or ``None`` if the activity couldn't be exported to GPX.
         :rtype: str
         """
-        response = self.session.get(
-            "https://connect.garmin.com/download-service/export/gpx/activity/{}".format(activity_id))
+        response = self.gc.get(
+            "connectapi", "/download-service/export/gpx/activity/{}".format(activity_id), api=True)
         # An alternate URL that seems to produce the same results
         # and is the one used when exporting through the Garmin
         # Connect web page.
-        # response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.1/gpx/activity/{}?full=true".format(activity_id))
+        # response = self.gc.get("connectapi", "/proxy/activity-service-1.1/gpx/activity/{}?full=true".format(activity_id))
 
         # A 404 (Not Found) or 204 (No Content) response are both indicators
         # of a gpx file not being available for the activity. It may, for
@@ -374,8 +254,8 @@ class GarminClient(object):
         :rtype: str
         """
 
-        response = self.session.get(
-            "https://connect.garmin.com/download-service/export/tcx/activity/{}".format(activity_id))
+        response = self.gc.get(
+            "connectapi", "/download-service/export/tcx/activity/{}".format(activity_id), api=True)
         if response.status_code == 404:
             return None
         if response.status_code != 200:
@@ -395,8 +275,8 @@ class GarminClient(object):
           its contents, or :obj:`(None,None)` if no file is found.
         :rtype: (str, str)
         """
-        response = self.session.get(
-            "https://connect.garmin.com/download-service/files/activity/{}".format(activity_id))
+        response = self.gc.get(
+            "connectapi", "/download-service/files/activity/{}".format(activity_id), api=True)
         # A 404 (Not Found) response is a clear indicator of a missing .fit
         # file. As of lately, the endpoint appears to have started to
         # respond with 500 "NullPointerException" on attempts to download a
@@ -452,8 +332,8 @@ class GarminClient(object):
           :obj:`None` if upload is still processing.
         :rtype: int
         """
-        response = self.session.get("https://connect.garmin.com/proxy/activity-service/activity/status/{}/{}?_={}".format(
-            creation_date[:10], uuid.replace("-",""), int(datetime.now().timestamp()*1000)), headers={"nk": "NT"})
+        response = self.gc.get("connectapi", "/activity-service/activity/status/{}/{}?_={}".format(
+            creation_date[:10], uuid.replace("-",""), int(datetime.now().timestamp()*1000)), api=True)
         if response.status_code == 201 and response.headers["location"]:
             # location should be https://connectapi.garmin.com/activity-service/activity/ACTIVITY_ID
             return int(response.headers["location"].split("/")[-1])
@@ -495,8 +375,8 @@ class GarminClient(object):
 
         # upload it
         files = dict(data=(fn, file))
-        response = self.session.post("https://connect.garmin.com/proxy/upload-service/upload/.{}".format(format),
-                                     files=files, headers={"nk": "NT"})
+        response = self.gc.post("connectapi", "/upload-service/upload/.{}".format(format),
+                                     files=files, api=True)
 
         # check response and get activity ID
         try:
@@ -547,32 +427,11 @@ class GarminClient(object):
         if data:
             data['activityId'] = activity_id
             encoding_headers = {"Content-Type": "application/json; charset=UTF-8"}  # see Tapiriik
-            response = self.session.put(
-                "https://connect.garmin.com/proxy/activity-service/activity/{}".format(activity_id),
+            response = self.gc.put(
+                "connectapi", "/activity-service/activity/{}".format(activity_id), api=True,
                 data=json.dumps(data), headers=encoding_headers)
             if response.status_code != 204:
                 raise Exception(u"failed to set metadata for activity {}: {}\n{}".format(
                     activity_id, response.status_code, response.text))
 
         return activity_id
-
-
-def new_http_session():
-    """Returns a requests-compatible HTTP Session.
-    See https://requests.readthedocs.io/en/latest/user/advanced/#session-objects.
-
-    By default it uses the requests library to create http sessions. If built with
-    the 'impersonate-browser' extra, it will use curl_cffi and a patched libcurl to
-    produce identical TLS fingerprints as a real web browsers to circumvent
-    Cloudflare's bot protection.
-    """
-    session_factory_func = requests.session
-    try:
-        import curl_cffi.requests
-        # For supported browsers: see https://github.com/lwthiker/curl-impersonate#supported-browsers
-        browser = os.getenv("GARMINEXPORT_IMPERSONATE_BROWSER", "chrome110")
-        log.info("using 'curl_cffi' to create HTTP sessions that impersonate web browser '%s' ...", browser)
-        session_factory_func = partial(curl_cffi.requests.Session, impersonate=browser)
-    except (ImportError):
-        pass
-    return session_factory_func()

@@ -18,12 +18,12 @@ def main():
 
     # positional args
     parser.add_argument(
-        "username", metavar="<username>", type=str, help="Account user name.")
-    parser.add_argument(
         "activity", nargs='+', metavar="<file>", type=argparse.FileType("rb"),
         help="Activity file (.gpx, .tcx, or .fit).")
 
     # optional args
+    parser.add_argument(
+        "--username", type=str, help="Account user name.")
     parser.add_argument(
         "--password", type=str, help="Account password.")
     parser.add_argument(
