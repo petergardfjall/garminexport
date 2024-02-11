@@ -452,7 +452,7 @@ class GarminClient(object):
           :obj:`None` if upload is still processing.
         :rtype: int
         """
-        response = self.session.get("https://connect.garmin.com/proxy/activity-service/activity/status/{}/{}?_={}".format(
+        response = self.session.get("https://connect.garmin.com/activity-service/activity/status/{}/{}?_={}".format(
             creation_date[:10], uuid.replace("-",""), int(datetime.now().timestamp()*1000)), headers={"nk": "NT"})
         if response.status_code == 201 and response.headers["location"]:
             # location should be https://connectapi.garmin.com/activity-service/activity/ACTIVITY_ID
@@ -495,7 +495,7 @@ class GarminClient(object):
 
         # upload it
         files = dict(data=(fn, file))
-        response = self.session.post("https://connect.garmin.com/proxy/upload-service/upload/.{}".format(format),
+        response = self.session.post("https://connect.garmin.com/upload-service/upload/.{}".format(format),
                                      files=files, headers={"nk": "NT"})
 
         # check response and get activity ID
@@ -548,7 +548,7 @@ class GarminClient(object):
             data['activityId'] = activity_id
             encoding_headers = {"Content-Type": "application/json; charset=UTF-8"}  # see Tapiriik
             response = self.session.put(
-                "https://connect.garmin.com/proxy/activity-service/activity/{}".format(activity_id),
+                "https://connect.garmin.com/activity-service/activity/{}".format(activity_id),
                 data=json.dumps(data), headers=encoding_headers)
             if response.status_code != 204:
                 raise Exception(u"failed to set metadata for activity {}: {}\n{}".format(
