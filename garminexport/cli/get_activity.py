@@ -25,14 +25,14 @@ def main():
 
     # positional args
     parser.add_argument(
-        "username", metavar="<username>", type=str, help="Account user name.")
-    parser.add_argument(
         "activity", metavar="<activity>", type=int, help="Activity ID.")
     parser.add_argument(
         "format", metavar="<format>", type=str,
         help="Export format (one of: {}).".format(garminexport.backup.supported_export_formats))
 
     # optional args
+    parser.add_argument(
+        "--username", type=str, help="Account user name.")
     parser.add_argument(
         "--password", type=str, help="Account password.")
     parser.add_argument(

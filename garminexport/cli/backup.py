@@ -31,10 +31,9 @@ def parse_args() -> argparse.Namespace:
             "given Garmin Connect account. Only activities that "
             "aren't already stored in the backup directory will "
             "be downloaded."))
-    # positional args
-    parser.add_argument(
-        "username", metavar="<username>", type=str, help="Account user name.")
     # optional args
+    parser.add_argument(
+        "--username", type=str, help="Account user name.")
     parser.add_argument(
         "--password", type=str, help="Account password.")
     parser.add_argument(
