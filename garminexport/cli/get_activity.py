@@ -43,6 +43,18 @@ def main():
         "--log-level", metavar="LEVEL", type=str,
         help="Desired log output level (DEBUG, INFO, WARNING, ERROR). Default: INFO.",
         default="INFO")
+    parser.add_argument(
+        "--token",
+        default=None,
+        type=str,
+        help=("Authentication header token. Use with 'jwt_fgp' instead of username and password, for example "
+              "if login fails due to ReCaptcha."))
+    parser.add_argument(
+        "--jwt_fgp",
+        default=None,
+        type=str,
+        help=("Authentication JWT_FGP Cookie. Use with 'token' instead of username and password, for example "
+              "if login fails due to ReCaptcha."))
 
     args = parser.parse_args()
 
@@ -60,10 +72,11 @@ def main():
         if not os.path.isdir(args.destination):
             os.makedirs(args.destination)
 
-        if not args.password:
+        prompt_password = not args.password and (not args.token or not args.jwt_fgp)
+        if prompt_password:
             args.password = getpass.getpass("Enter password: ")
 
-        with GarminClient(args.username, args.password) as client:
+        with GarminClient(args.username, args.password, args.token, args.jwt_fgp) as client:
             log.info("fetching activity %s ...", args.activity)
             summary = client.get_activity_summary(args.activity)
             # set up a retryer that will handle retries of failed activity downloads
