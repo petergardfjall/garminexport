@@ -58,6 +58,18 @@ def parse_args() -> argparse.Namespace:
         help=("The maximum number of retries to make on failed attempts to fetch an activity. "
               "Exponential backoff will be used, meaning that the delay between successive attempts "
               "will double with every retry, starting at one second. DEFAULT: {}").format(DEFAULT_MAX_RETRIES))
+    parser.add_argument(
+        "--token",
+        default=None,
+        type=str,
+        help=("Authentication header token. Use with 'jwt_fgp' instead of username and password, for example "
+              "if login fails due to ReCaptcha."))
+    parser.add_argument(
+        "--jwt_fgp",
+        default=None,
+        type=str,
+        help=("Authentication JWT_FGP Cookie. Use with 'token' instead of username and password, for example "
+              "if login fails due to ReCaptcha."))
 
     return parser.parse_args()
 
@@ -69,6 +81,8 @@ def main():
     try:
         incremental_backup(username=args.username,
                            password=args.password,
+                           token=args.token,
+                           jwt_fgp=args.jwt_fgp,
                            backup_dir=args.backup_dir,
                            export_formats=args.format,
                            ignore_errors=args.ignore_errors,

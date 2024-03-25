@@ -15,6 +15,8 @@ log = logging.getLogger(__name__)
 
 def incremental_backup(username: str,
                        password: str = None,
+                       token: str = None,
+                       jwt_fgp: str = None,
                        backup_dir: str = os.path.join(".", "activities"),
                        export_formats: List[str] = None,
                        ignore_errors: bool = False,
@@ -43,7 +45,8 @@ def incremental_backup(username: str,
     if not os.path.isdir(backup_dir):
         os.makedirs(backup_dir)
 
-    if not password:
+    prompt_password = not password and (not token or not jwt_fgp)
+    if prompt_password:
         password = getpass.getpass("Enter password: ")
 
     # set up a retryer that will handle retries of failed activity downloads
@@ -51,7 +54,7 @@ def incremental_backup(username: str,
         delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=1)),
         stop_strategy=MaxRetriesStopStrategy(max_retries))
 
-    with GarminClient(username, password) as client:
+    with GarminClient(username, password, token, jwt_fgp) as client:
         # get all activity ids and timestamps from Garmin account
         log.info("scanning activities for %s ...", username)
         activities = set(retryer.call(client.list_activities))

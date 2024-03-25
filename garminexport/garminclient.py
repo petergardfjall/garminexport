@@ -66,7 +66,7 @@ class GarminClient(object):
 
     """
 
-    def __init__(self, username, password):
+    def __init__(self, username, password, token=None, jwt_fgp=None):
         """Initialize a :class:`GarminClient` instance.
 
         :param username: Garmin Connect user name or email address.
@@ -76,6 +76,8 @@ class GarminClient(object):
         """
         self.username = username
         self.password = password
+        self.token = token
+        self.jwt_fgp = jwt_fgp
 
         self.session = None
 
@@ -89,6 +91,11 @@ class GarminClient(object):
 
     def connect(self):
         self.session = new_http_session()
+
+        if self.token is not None and self.jwt_fgp is not None:
+            self._authenticate_with_token()
+            return
+
         self._authenticate()
 
     def disconnect(self):
@@ -127,6 +134,17 @@ class GarminClient(object):
                 'Di-Backend': 'connectapi.garmin.com',
             })
 
+    def _authenticate_with_token(self):
+        log.info("authenticating user with provided token ...")
+        token_type = "Bearer"
+        self.session.headers.update(
+            {
+                "Authorization": f"{token_type} {self.token}",
+                "Di-Backend": "connectapi.garmin.com",
+                "NK": "NT",
+            }
+        )
+        self.session.cookies.update({"JWT_FGP": self.jwt_fgp})
 
     def _get_oauth_token(self):
         """Retrieve an OAuth token to use for the session.
