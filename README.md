@@ -1,4 +1,4 @@
-![Build badge](https://github.com/petergardfjall/garminexport/actions/workflows/run-tests.yaml/badge.svg)
+![Build badge](https://github.com/garminexport/garminexport/actions/workflows/run-tests.yaml/badge.svg)
 [![PyPi release](https://img.shields.io/pypi/v/garminexport.svg)](https://img.shields.io/pypi/v/garminexport.svg)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/garminexport)
 ![PyPI - License](https://img.shields.io/pypi/l/garminexport)
@@ -122,6 +122,14 @@ Supported export formats:
   any time). Only included since it _may_ contain additional data that could be
   useful for developers of analysis tools.</sub>
 
+- `gear`: gear used in an activity (JSON list).
+
+  <sub>Provides a list of the gear that's added to an activity (such as tracking
+  road versus mountain versus gravel bikes or different pairs of running shoes).
+  Seems to lack a formal schema and should not be counted on as a stable data
+  format (may change at any time). Only included since it _may_ contain additional
+  data that could be useful for developers of analysis tools.</sub>
+
 All files are written to the same directory (`activities/` by default). Each
 activity file is prefixed by its upload timestamp and its activity id.
 
@@ -131,6 +139,20 @@ activity file is prefixed by its upload timestamp and its activity id.
   `--help`for more details.
 - `garmin-upload-activity`: uplad a single Garmin Connect activity file (`.fit`,
   `.gpx`, or `.tcx`). Run with `--help`for more details.
+
+### Authentication via cookie and token instead of username and password
+
+If you have problems with the classic login with username and password, you can alternatively pass an Authorisation header and the JWT_FGP cookie directly from the command line.
+
+Open a Web browser (e.g. Chrome) and log in to your Garmin Connect account. Open the Developer Tools (F12) and go to the Application tab. Under Storage, select Cookies and select the Garmin Connect domain. Copy the value of the `orderToken` and the `JWT_FGP` cookie.
+
+You can then set the appropriate environment variables and run the script, e.g:
+
+```bash
+export TOKEN="longer_token_here"
+export JWT_FGP="shorter-cookie-here"
+garmin-backup --token=$TOKEN --jwt_fgp=$JWT_FGP <username or email>
+```
 
 ## As a library
 

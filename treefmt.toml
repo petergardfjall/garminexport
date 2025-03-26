@@ -1,0 +1,55 @@
+# One CLI to format the code tree - https://git.numtide.com/numtide/treefmt
+
+[global]
+excludes = [
+    "*.gitignore",
+    "*.dockerignore",
+    ".envrc",
+    "Makefile",
+    "LICENSE",
+    "*.dat",
+    "*.lock",
+    "*.txt",
+    "*.csv",
+    "*.ico",
+    "*.png",
+    "*.svg",
+    "*.properties",
+    "*.xml",
+    "*.typos.toml",
+    "treefmt.toml",
+    "pyproject.toml",
+    "setup.cfg",
+    ]
+
+
+# run shellcheck first
+[formatter.shellcheck]
+command = "shellcheck"
+includes = ["*.sh"]
+priority = 0    # default is 0, but we set it here for clarity
+
+# shfmt second
+[formatter.shfmt]
+command = "shfmt"
+options = ["-s", "-w"]
+includes = ["*.sh"]
+priority = 1
+
+[formatter.prettier]
+command = "prettier"
+excludes = []
+includes = ["*.cjs", "*.css", "*.html", "*.js", "*.json", "*.json5", "*.jsx", "*.md", "*.mdx", "*.mjs", "*.scss", "*.ts", "*.tsx", "*.vue", "*.yaml", "*.yml"]
+options = ["--write"]
+
+[formatter.ruff-format]
+command = "ruff"
+excludes = []
+includes = ["*.py", "*.pyi"]
+options = ["format"]
+
+# [formatter.ruff-check]
+# command = "ruff"
+# excludes = []
+# includes = ["*.py", "*.pyi"]
+# options = ["check", "--fix"]

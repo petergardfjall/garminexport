@@ -7,19 +7,19 @@ import logging
 
 from garminexport.garminclient import GarminClient
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s"
+)
 log = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(
-        description="Export all Garmin Connect activities")
+    parser = argparse.ArgumentParser(description="Export all Garmin Connect activities")
     # positional args
     parser.add_argument(
-        "username", metavar="<username>", type=str, help="Account user name.")
+        "username", metavar="<username>", type=str, help="Account user name."
+    )
     # optional args
-    parser.add_argument(
-        "--password", type=str, help="Account password.")
+    parser.add_argument("--password", type=str, help="Account password.")
 
     args = parser.parse_args()
     print(args)
@@ -38,7 +38,7 @@ if __name__ == "__main__":
             activity = client.get_activity_summary(latest_activity)
             log.info("activity id: %s", activity["activity"]["activityId"])
             log.info("activity name: '%s'", activity["activity"]["activityName"])
-            log.info("activity description: '%s'", activity["activity"]["activityDescription"])
+            log.info("activity description: '%s'", activity["activityDescription"])
             log.info(json.dumps(client.get_activity_details(latest_activity), indent=4))
             log.info(client.get_activity_gpx(latest_activity))
     except Exception as e:

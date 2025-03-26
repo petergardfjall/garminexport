@@ -1,4 +1,3 @@
-from datetime import datetime
 from datetime import timedelta
 import logging
 import time
@@ -6,10 +5,13 @@ import unittest
 
 from garminexport.retryer import (
     Retryer,
-    NoDelayStrategy, FixedDelayStrategy, ExponentialBackoffDelayStrategy,
+    NoDelayStrategy,
+    FixedDelayStrategy,
+    ExponentialBackoffDelayStrategy,
     SuppressAllErrorStrategy,
-    NeverStopStrategy
+    NeverStopStrategy,
 )
+
 
 class Counter(object):
     """An object whose `next_value` method returns increasing values."""
@@ -36,13 +38,11 @@ class FailNTimesThenReturn(object):
         self.called += 1
         if self.called < self.calls_until_success:
             raise RuntimeError("boom!")
-        return self.returnval    
+        return self.returnval
 
 
-    
 class TestRetryer(unittest.TestCase):
     """Exercise `Retryer`."""
-
 
     def test_with_defaults(self):
         """Default `Retryer` behavior is to keep trying until a(ny) value is
@@ -51,13 +51,12 @@ class TestRetryer(unittest.TestCase):
         returnval = Retryer().call(failing_client.next_value)
         self.assertEqual(returnval, "success!")
         self.assertEqual(failing_client.called, 10)
-        
 
     def test_with_returnval_predicate(self):
         """`Retryer` should only return when the returnval_predicate says so."""
         retryer = Retryer(returnval_predicate=lambda r: r == 20)
         self.assertEqual(retryer.call(Counter().next_value), 20)
-   
+
     def test_function_with_positional_args(self):
         """`Retryer` should be able to call a function with positional args."""
         # TODO
@@ -67,15 +66,16 @@ class TestRetryer(unittest.TestCase):
         """`Retryer` should be able to call a function with keyword args."""
         # TODO
         pass
-    
-    
+
     def test_bla(self):
         retryer = Retryer()
-        func = lambda : int(time.time())
-        
+
+        def func():
+            return int(time.time())
+
         returnval = retryer.call(func)
         print(returnval)
-        
+
 
 class TestFixedDelayStrategy(unittest.TestCase):
     """Exercise `FixedDelayStrategy`."""
@@ -83,7 +83,7 @@ class TestFixedDelayStrategy(unittest.TestCase):
     def setUp(self):
         # object under test
         self.strategy = FixedDelayStrategy(timedelta(seconds=10))
-    
+
     def test_calculate_delay(self):
         """`FixedDelayStrategy` should always return the same delay."""
         self.assertEqual(self.strategy.next_delay(0), timedelta(seconds=10))
@@ -100,7 +100,7 @@ class TestNoDelayStrategy(unittest.TestCase):
     def setUp(self):
         # object under test
         self.strategy = NoDelayStrategy()
-    
+
     def test_calculate_delay(self):
         """`NoDelayStrategy` should always return no delay."""
         self.assertEqual(self.strategy.next_delay(0), timedelta(seconds=0))
@@ -110,14 +110,14 @@ class TestNoDelayStrategy(unittest.TestCase):
         self.assertEqual(self.strategy.next_delay(10), timedelta(seconds=0))
         self.assertEqual(self.strategy.next_delay(100), timedelta(seconds=0))
 
-        
+
 class TestExponentialBackoffDelayStrategy(unittest.TestCase):
     """Exercise `ExponentialBackoffDelayStrategy`."""
 
     def setUp(self):
         # object under test
         self.strategy = ExponentialBackoffDelayStrategy(timedelta(seconds=1))
-    
+
     def test_calculate_delay(self):
         """`ExponentialBackoffDelayStrategy` should return exponentially increasing delay."""
         self.assertEqual(self.strategy.next_delay(0), timedelta(seconds=0))
@@ -132,21 +132,21 @@ class TestExponentialBackoffDelayStrategy(unittest.TestCase):
         """The initial delay is used to scale the series of delays."""
         self.strategy = ExponentialBackoffDelayStrategy(timedelta(seconds=2))
         self.assertEqual(self.strategy.next_delay(0), timedelta(seconds=0))
-        self.assertEqual(self.strategy.next_delay(1), timedelta(seconds=2*1))
-        self.assertEqual(self.strategy.next_delay(2), timedelta(seconds=2*2))
-        self.assertEqual(self.strategy.next_delay(3), timedelta(seconds=2*4))
-        self.assertEqual(self.strategy.next_delay(4), timedelta(seconds=2*8))
-        self.assertEqual(self.strategy.next_delay(5), timedelta(seconds=2*16))
-        self.assertEqual(self.strategy.next_delay(10), timedelta(seconds=2*512))
-        
-        
+        self.assertEqual(self.strategy.next_delay(1), timedelta(seconds=2 * 1))
+        self.assertEqual(self.strategy.next_delay(2), timedelta(seconds=2 * 2))
+        self.assertEqual(self.strategy.next_delay(3), timedelta(seconds=2 * 4))
+        self.assertEqual(self.strategy.next_delay(4), timedelta(seconds=2 * 8))
+        self.assertEqual(self.strategy.next_delay(5), timedelta(seconds=2 * 16))
+        self.assertEqual(self.strategy.next_delay(10), timedelta(seconds=2 * 512))
+
+
 class TestSuppressAllErrorStrategy(unittest.TestCase):
     """Exercise `SuppressAllErrorStrategy`."""
 
     def setUp(self):
         # object under test
         self.strategy = SuppressAllErrorStrategy()
-    
+
     def test_suppress(self):
         """`SuppressAllErrorStrategy` should always suppress."""
         self.assertTrue(self.strategy.should_suppress(RuntimeError("boom!")))
@@ -155,14 +155,14 @@ class TestSuppressAllErrorStrategy(unittest.TestCase):
         self.assertTrue(self.strategy.should_suppress("boom!"))
         self.assertTrue(self.strategy.should_suppress(None))
 
-        
+
 class TestNeverStopStrategy(unittest.TestCase):
     """Exercise `NeverStopStrategy`"""
 
     def setUp(self):
         # object under test
         self.strategy = NeverStopStrategy()
-    
+
     def test_suppress(self):
         """`SuppressAllErrorStrategy` should always suppress."""
         self.assertTrue(self.strategy.should_continue(1, timedelta(seconds=1)))
@@ -171,8 +171,9 @@ class TestNeverStopStrategy(unittest.TestCase):
         self.assertTrue(self.strategy.should_continue(4, timedelta(seconds=5)))
         self.assertTrue(self.strategy.should_continue(400, timedelta(hours=1)))
         self.assertTrue(self.strategy.should_continue(4000, timedelta(hours=8)))
-    
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s %(message)s", level=logging.DEBUG)
-    
+
     unittest.main()

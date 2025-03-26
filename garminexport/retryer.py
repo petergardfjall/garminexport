@@ -9,12 +9,14 @@ log = logging.getLogger(__name__)
 
 class GaveUpError(Exception):
     """Raised by a :class:`Retryer` that has exceeded its maximum number of retries."""
+
     pass
 
 
 class DelayStrategy(object):
     """Used by a :class:`Retryer` to determines how long to wait after an
-    attempt before the next retry. """
+    attempt before the next retry."""
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
@@ -75,6 +77,7 @@ class NoDelayStrategy(FixedDelayStrategy):
 class ErrorStrategy(object):
     """Used by a :class:`Retryer` to determine which errors are to be
     suppressed and which errors are to be re-raised and thereby end the (re)trying."""
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
@@ -97,6 +100,7 @@ class SuppressAllErrorStrategy(ErrorStrategy):
 
 class StopStrategy(object):
     """Determines for how long a :class:`Retryer` should keep (re)trying."""
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
@@ -146,11 +150,12 @@ class Retryer(object):
     """
 
     def __init__(
-            self,
-            returnval_predicate=lambda returnval: True,
-            delay_strategy=NoDelayStrategy(),
-            stop_strategy=NeverStopStrategy(),
-            error_strategy=SuppressAllErrorStrategy()):
+        self,
+        returnval_predicate=lambda returnval: True,
+        delay_strategy=NoDelayStrategy(),
+        stop_strategy=NeverStopStrategy(),
+        error_strategy=SuppressAllErrorStrategy(),
+    ):
         """Creates a new :class:`Retryer` set up to use a given set of
         strategies to control its behavior.
 
@@ -195,21 +200,28 @@ class Retryer(object):
         while True:
             try:
                 attempts += 1
-                log.info('{%s}: attempt %d ...', name, attempts)
+                log.info("{%s}: attempt %d ...", name, attempts)
                 returnval = function(*args, **kw)
                 if self.returnval_predicate(returnval):
                     # return value satisfies predicate, we're done!
                     log.debug('{%s}: success: "%s"', name, returnval)
                     return returnval
-                log.debug('{%s}: failed: return value: %s', name, returnval)
+                log.debug("{%s}: failed: return value: %s", name, returnval)
             except Exception as e:
-                if self.error_strategy is None or not self.error_strategy.should_suppress(e):
+                if (
+                    self.error_strategy is None
+                    or not self.error_strategy.should_suppress(e)
+                ):
                     raise e
-                log.debug('{%s}: failed: error: %s', name, e)
+                log.debug("{%s}: failed: error: %s", name, e)
             elapsed_time = datetime.now() - start
             # should we make another attempt?
             if not self.stop_strategy.should_continue(attempts, elapsed_time):
-                raise GaveUpError('{{}}: gave up after {} failed attempt(s)'.format(name, attempts))
+                raise GaveUpError(
+                    "{}: gave up after {} failed attempt(s)".format(name, attempts)
+                )
             delay = self.delay_strategy.next_delay(attempts)
-            log.info('{%s}: waiting %d seconds for next attempt', name, delay.total_seconds())
+            log.info(
+                "{%s}: waiting %d seconds for next attempt", name, delay.total_seconds()
+            )
             time.sleep(delay.total_seconds())

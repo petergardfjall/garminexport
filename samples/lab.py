@@ -14,24 +14,26 @@ import logging
 
 from garminexport.garminclient import GarminClient
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s"
+)
 log = logging.getLogger(__name__)
 
-if __name__ == "__main__":   
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # positional args
     parser.add_argument(
-        "username", metavar="<username>", type=str, help="Account user name.")
+        "username", metavar="<username>", type=str, help="Account user name."
+    )
     # optional args
-    parser.add_argument(
-        "--password", type=str, help="Account password.")
+    parser.add_argument("--password", type=str, help="Account password.")
 
     args = parser.parse_args()
     print(args)
 
     if not args.password:
         args.password = getpass.getpass("Enter password: ")
-        
+
     client = GarminClient(args.username, args.password)
     client.connect()
 
