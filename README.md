@@ -6,7 +6,7 @@
 # About
 
 `garminexport` is both a library and a tool for downloading/backing up
-[Garmin Connect](http://connect.garmin.com/) activities to a local disk.
+[Garmin Connect](http://connect.garmin.com/) activities to local disk.
 
 The main utility script is called `garmin-backup` and performs incremental
 backups of your Garmin account to a local directory. The first time
@@ -17,43 +17,11 @@ activities that haven't already been downloaded to the backup directory.
 # Installation
 
 `garminexport` is available on [PyPi](https://pypi.org/) and can be installed
-with [pip](http://pip.readthedocs.org).
-
-## Vanilla installation
-
-> **WARNING**
->
-> GarminConnect employs Cloudflare's bot protection to prevent scripted access
-> to their services. Therefore a vanilla installation is no longer likely to
-> work. Instead, try the
-> [Browser-impersonating installation](#browser-impersonating-installation)
-> below.
-
-To only install `garminexport` and required dependencies run:
+with [pip](http://pip.readthedocs.org):
 
 ```bash
 pip install garminexport
 ```
-
-## Browser-impersonating installation
-
-To install `garminexport` with support to circumvent Cloudflare's bot protection
-you should install the module with the `impersonate_browser`
-[extra](https://setuptools.pypa.io/en/latest/userguide/dependency_management.html#optional-dependencies)
-like so:
-
-```bash
-pip install 'garminexport[impersonate_browser]'
-```
-
-This replaces the default [requests](https://github.com/psf/requests) library
-with [curl_cffi](https://github.com/yifeikong/curl_cffi) for HTTP session
-handling.
-
-When `curl_cffi` is used, the `GARMINEXPORT_IMPERSONATE_BROWSER` environment
-variable can be used to control which browser is impersonated (default is
-`chrome110`, see
-[full list](https://github.com/lwthiker/curl-impersonate#supported-browsers)).
 
 # Usage
 
@@ -63,13 +31,56 @@ To be of any use you need to register an account at
 [Garmin Connect](http://connect.garmin.com/) and populate it with some
 activities.
 
+## Authentication
+
+> [!NOTE]  
+> <sub>It has been proposed (e.g. in
+> [#102](https://github.com/petergardfjall/garminexport/issues/102)) that
+> `garminexport` be migrated to use [garth](https://github.com/matin/garth), a
+> library that uses API secrets from the Garmin Connect Android app. Although
+> admittedly an approach more suitable for automation, the legal implications of
+> using such API secrets without
+> [proper permit](https://www.garmin.com/en-US/forms/GarminConnectDeveloperAccess/)
+> are unclear.</sub>
+>
+> <sub>Instead `garminexport` sticks to its original spirit of only doing what a
+> human user would rightfully be able to do through the web browser. This does
+> come at the price of requiring some manual work.</sub>
+
+Over the years Garmin has made it increasingly difficult to programatically
+access their site (without a
+[proper permit](https://www.garmin.com/en-US/forms/GarminConnectDeveloperAccess/)
+and API keys, which are only handed out to businesses). They have systematically
+added bot protection (such as browser detection and CAPTCHAs) to their
+authentication flow to prevent scripted access. Trying to keep up with this over
+time became unsustainable.
+
+As of version `0.6.0` of `garminexport`, the authentication flow was reworked to
+rely on the human user to perform the actual login _through a web-browser_ and
+then, via web browser developer tools, extract the tokens needed to authenticate
+further client interactions (proposed by @ryeguard in
+https://github.com/petergardfjall/garminexport/pull/115).
+
+After logging in at https://connect.garmin.com (using your web browser of
+choice) there are two tokens that need to be supplied to `garminexport` for it
+to authenticate its client requests:
+
+- A `JWT_FGP` cookie: extract its value through web browser developer tools by
+  looking at cookies stored for https://connect.garmin.com.
+- An OAuth bearer token: extract its value through web browser developer tools
+  by looking at the request (not response) `Headers` of a network request. The
+  header to look for is `Authorization` and the the token value is everything
+  following the leading `Bearer` string.
+
 ## As a command-line tool (garmin-backup)
 
-The backup program is run as follows (use the `--help` flag for a full list of
-available options):
+The backup program is run as follows, with `--bearer-token` and
+`--jwt-fgp-cookie` extracted as explained in the section on
+[Authentication](#authentication). Use the `--help` flag for a full list of
+available options:
 
 ```bash
-garmin-backup --backup-dir=activities <username or email>
+garmin-backup --backup-dir=activities --bearer-token="eyJ[..]Q4g" --jwt-fgp-cookie=5768b018-dda6-4e51-add9-f4b8eb5c1758
 ```
 
 Once started, the program will prompt you for your account password and then log
@@ -145,15 +156,9 @@ For example, in your `setup.py`, `setup.cfg`, `pyproject.toml`
 ```python
 install_requires=[
     'garminexport',
-    # also installs 'impersonate_browser as a dependency
-    # 'garminexport[impersonate_browser]',
     ...
 ]
 ```
-
-Note: if you happen to have
-[cloudscraper](https://github.com/VeNoMouS/cloudscraper) on your `PACKAGEPATH`
-`GarminClient` will make use of it whenever it needs to make an HTTP request.
 
 # Contribute
 

@@ -31,12 +31,18 @@ def parse_args() -> argparse.Namespace:
             "given Garmin Connect account. Only activities that "
             "aren't already stored in the backup directory will "
             "be downloaded."))
-    # positional args
+
     parser.add_argument(
-        "username", metavar="<username>", type=str, help="Account user name.")
-    # optional args
+        "--bearer-token", default=None, type=str,
+        help=("""Bearer authentication token to use as Authorization request header.
+        Extract through developer tools from an active web browser session.
+        Must be used together with --jwt-fgp-cookie."""))
     parser.add_argument(
-        "--password", type=str, help="Account password.")
+        "--jwt-fgp-cookie", default=None, type=str,
+        help=("""Authentication JWT_FGP cookie.
+        Extract through developer tools from an active web browser session.
+        Must be used together with --bearer-token."""))
+
     parser.add_argument(
         "--backup-dir", metavar="DIR", type=str,
         help="Destination directory for downloaded activities. Default: ./activities/",
@@ -67,8 +73,9 @@ def main():
     logging.root.setLevel(LOG_LEVELS[args.log_level])
 
     try:
-        incremental_backup(username=args.username,
-                           password=args.password,
+        incremental_backup(bearer_token=args.bearer_token,
+                           jwt_fgp_cookie=args.jwt_fgp_cookie,
+
                            backup_dir=args.backup_dir,
                            export_formats=args.format,
                            ignore_errors=args.ignore_errors,

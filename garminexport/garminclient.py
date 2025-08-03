@@ -24,15 +24,6 @@ log = logging.getLogger(__name__)
 logging.getLogger("requests").setLevel(logging.ERROR)
 
 
-PORTAL_LOGIN_URL = "https://sso.garmin.com/portal/api/login"
-"""Garmin Connect's Single-Sign On login URL."""
-SSO_LOGIN_URL = "https://sso.garmin.com/sso/login"
-"""Garmin Connect's Single-Sign On login URL."""
-SSO_SIGNIN_URL = "https://sso.garmin.com/sso/signin"
-"""The Garmin Connect Single-Sign On sign-in URL. This is where the login form
-gets POSTed."""
-
-
 def require_session(client_function):
     """Decorator that is used to annotate :class:`GarminClient`
     methods that need an authenticated session before being called.
@@ -59,26 +50,33 @@ class GarminClient(object):
     a failure occurs.
 
     Example of use: ::
-      with GarminClient("my.sample@sample.com", "secretpassword") as client:
+      with GarminClient(bearer_token="..", jwt_fgp_cookie="..") as client:
           ids = client.list_activity_ids()
           for activity_id in ids:
                gpx = client.get_activity_gpx(activity_id)
 
     """
 
-    def __init__(self, username, password):
+    def __init__(self, bearer_token, jwt_fgp_cookie):
         """Initialize a :class:`GarminClient` instance.
 
-        :param username: Garmin Connect user name or email address.
-        :type username: str
-        :param password: Garmin Connect account password.
-        :type password: str
+
+        :param bearer_token: This is the OAuth bearer token to use for the
+        Authorization header in client requests. It needs to be extracted using
+        web browser developer tools from an active Garmin Connect session (with
+        a successful login).
+        :type bearer_token: str
+
+        :param jwt_fgp_cookie: This is the JWT_FGP cookie to use in client
+        requests. It needs to be extracted using web browser developer tools
+        from an active Garmin Connect session (with a successful login).
+        :type jwt_fgp_cookie: str
+
         """
-        self.username = username
-        self.password = password
+        self.bearer_token = bearer_token
+        self.jwt_fgp_cookie = jwt_fgp_cookie
 
         self.session = None
-
 
     def __enter__(self):
         self.connect()
@@ -88,149 +86,36 @@ class GarminClient(object):
         self.disconnect()
 
     def connect(self):
-        self.session = new_http_session()
-        self._authenticate()
+        self.session = requests.session()
+
+        if not (self.bearer_token and self.jwt_fgp_cookie):
+            raise ValueError("both bearer_token and jwt_fgp_cookie are required for authentication")
+        self._authenticate_with_token()
 
     def disconnect(self):
         if self.session:
             self.session.close()
             self.session = None
 
-    def _authenticate(self):
-        """
-        Authenticates using a Garmin Connect username and password.
-
-        The procedure has changed over the years. A good approach for figuring
-        it out is to use the browser development tools to trace all requests
-        following a sign-in.
-        """
-        log.info("authenticating user ...")
-
-        auth_ticket_url = self._login(self.username, self.password)
-        log.debug("auth ticket url: '%s'", auth_ticket_url)
-
-        self._claim_auth_ticket(auth_ticket_url)
-
-        # we need to touch base with the main page to complete the login ceremony.
-        self.session.get('https://connect.garmin.com/modern')
-        # This header appears to be needed on subsequent session requests or we
-        # end up with a 402 response from Garmin.
-        self.session.headers.update({'NK': 'NT'})
-
-        # We need to pass an Authorization oauth token with subsequent requests.
-        auth_token = self._get_oauth_token()
-        token_type = auth_token['token_type']
-        access_token = auth_token['access_token']
+    def _authenticate_with_token(self):
+        """Authenticates using a OAuth bearer token and JWT_FGP cookie token
+        extracted from an existing web browser login."""
+        log.info("authenticating user with OAuth Bearer token and JWT_FGP cooke token ...")
         self.session.headers.update(
             {
-                'Authorization': f'{token_type} {access_token}',
-                'Di-Backend': 'connectapi.garmin.com',
-            })
+                "Authorization": f"Bearer {self.bearer_token}",
+                "Di-Backend": "connectapi.garmin.com",
+                "NK": "NT",
+            }
+        )
+        self.session.cookies.update({"JWT_FGP": self.jwt_fgp_cookie})
 
-
-    def _get_oauth_token(self):
-        """Retrieve an OAuth token to use for the session.
-
-        Typically looks something like the following. The 'access_token'
-        needs to be passed in the 'Authorization' header for remaining session
-        requests.
-
-          {
-            "scope": "...",
-            "jti": "...",
-            "access_token": "...",
-            "token_type": "Bearer",
-            "refresh_token": "...",
-            "expires_in": 3599,
-            "refresh_token_expires_in": 7199
-          }
-        """
-        log.info("getting oauth token ...")
-        headers = {
-            'authority': 'connect.garmin.com',
-            'origin': 'https://connect.garmin.com',
-            'referer': 'https://connect.garmin.com/modern/',
-        }
-        resp = self.session.post('https://connect.garmin.com/modern/di-oauth/exchange',
-                                 headers=headers)
-        if resp.status_code != 200:
-            raise ValueError(f'get oauth token failed with {resp.status_code}: {resp.text}')
-        return resp.json()
-
-
-    def _login(self, username, password):
-        """Logs in with the supplied account credentials.
-        The return value is a URL where the created authentication ticket can be claimed.
-        For example, "https://connect.garmin.com/modern?ticket=ST-2550833-30KdiEJ3jqvFzLNGi2C7-sso"
-
-        The response message looks typically something like this:
-          {
-             "serviceURL":"https://connect.garmin.com/modern/",
-             "serviceTicketId":"ST-2550833-30KdiEJ3jqvFzLNGi2C7-sso",
-             "responseStatus":{"type":"SUCCESSFUL","message":"","httpStatus":"OK"},
-             "customerMfaInfo":null,
-             "consentTypeList":null
-          }
-        """
-        headers = {
-            'authority': 'sso.garmin.com',
-            'origin': 'https://sso.garmin.com',
-            'referer': 'https://sso.garmin.com/portal/sso/en-US/sign-in?clientId=GarminConnect&service=https%3A%2F%2Fconnect.garmin.com%2Fmodern',
-        }
-        params = {
-            "clientId": "GarminConnect",
-            "service": "https://connect.garmin.com/modern/",
-            "gauthHost": "https://sso.garmin.com/sso",
-        }
-        form_data = {'username': username, 'password': password}
-
-        log.info("passing login credentials ...")
-        resp = self.session.post(PORTAL_LOGIN_URL, headers=headers, params=params, json=form_data)
-        log.debug("got auth response %d: %s", resp.status_code, resp.text)
-        if resp.status_code != 200:
-            raise ValueError(f'authentication attempt failed with {resp.status_code}: {resp.text}')
-        return self._extract_auth_ticket_url(resp.json())
-
-    def _claim_auth_ticket(self, auth_ticket_url):
-        # Note: first we bump the login URL.
-        p = {
-            'clientId': 'GarminConnect',
-            'service': 'https://connect.garmin.com/modern/',
-            'webhost': 'https://connect.garmin.com',
-            'gateway': 'true',
-            'generateExtraServiceTicket': 'true',
-            'generateTwoExtraServiceTickets': 'true',
-        }
-        self.session.get(SSO_LOGIN_URL, headers={}, params=p)
-
-        log.info("claiming auth ticket %s ...", auth_ticket_url)
-        response = self.session.get(auth_ticket_url)
+        # Make a probe request as a validation of proper auth credentials.
+        response = self.session.get(
+            "https://connect.garmin.com/userprofile-service/userprofile/user-settings")
         if response.status_code != 200:
-            raise RuntimeError(
-                "auth failure: failed to claim auth ticket: {}: {}\n{}".format(
-                    auth_ticket_url, response.status_code, response.text))
-
-
-    @staticmethod
-    def _extract_auth_ticket_url(auth_response):
-        """Extracts an authentication ticket URL from the response of an
-        authentication form submission. The auth ticket URL is typically
-        of form:
-
-          https://connect.garmin.com/modern?ticket=ST-0123456-aBCDefgh1iJkLmN5opQ9R-cas
-
-        :param auth_response: JSON response from a login form submission.
-        """
-        if auth_response['responseStatus']['type'] == 'INVALID_USERNAME_PASSWORD':
-            RuntimeError("authentication failure: did you provide a correct username/password?")
-        service_url = auth_response.get('serviceURL')
-        auth_ticket = auth_response.get('serviceTicketId')
-        if not service_url:
-            raise RuntimeError("auth failure: unable to extract serviceURL")
-        if not auth_ticket:
-            raise RuntimeError("auth failure: unable to extract serviceTicketId")
-        auth_ticket_url = service_url.rstrip('/') + '?ticket=' + auth_ticket
-        return auth_ticket_url
+            raise Exception('Probe request failed. Did you supply proper credentials?')
+        log.debug("probe response: %s", response.json())
 
     @require_session
     def list_activities(self):
@@ -555,24 +440,3 @@ class GarminClient(object):
                     activity_id, response.status_code, response.text))
 
         return activity_id
-
-
-def new_http_session():
-    """Returns a requests-compatible HTTP Session.
-    See https://requests.readthedocs.io/en/latest/user/advanced/#session-objects.
-
-    By default it uses the requests library to create http sessions. If built with
-    the 'impersonate-browser' extra, it will use curl_cffi and a patched libcurl to
-    produce identical TLS fingerprints as a real web browsers to circumvent
-    Cloudflare's bot protection.
-    """
-    session_factory_func = requests.session
-    try:
-        import curl_cffi.requests
-        # For supported browsers: see https://github.com/lwthiker/curl-impersonate#supported-browsers
-        browser = os.getenv("GARMINEXPORT_IMPERSONATE_BROWSER", "chrome110")
-        log.info("using 'curl_cffi' to create HTTP sessions that impersonate web browser '%s' ...", browser)
-        session_factory_func = partial(curl_cffi.requests.Session, impersonate=browser)
-    except (ImportError):
-        pass
-    return session_factory_func()

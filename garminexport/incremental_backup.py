@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-import getpass
 import logging
 import os
 from datetime import timedelta
@@ -13,26 +12,40 @@ from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRe
 log = logging.getLogger(__name__)
 
 
-def incremental_backup(username: str,
-                       password: str = None,
+def incremental_backup(bearer_token: str = None,
+                       jwt_fgp_cookie: str = None,
+
                        backup_dir: str = os.path.join(".", "activities"),
                        export_formats: List[str] = None,
                        ignore_errors: bool = False,
                        max_retries: int = 7):
     """Performs (incremental) backups of activities for a given Garmin Connect account.
 
-    :param username: Garmin Connect user name
-    :param password: Garmin Connect user password. Default: None. If not provided, would be asked interactively.
-    :param backup_dir: Destination directory for downloaded activities. Default: ./activities/".
-    :param export_formats: List of desired output formats (json_summary, json_details, gpx, tcx, fit).
-    Default: `None` which means all supported formats will be backed up.
-    :param ignore_errors: Ignore errors and keep going. Default: False.
-    :param max_retries: The maximum number of retries to make on failed attempts to fetch an activity.
-    Exponential backoff will be used, meaning that the delay between successive attempts
-    will double with every retry, starting at one second. Default: 7.
+    :param bearer_token: This is the OAuth bearer token to use for the
+    Authorization header in client requests. It needs to be extracted using web
+    browser developer tools from an active Garmin Connect session (with a
+    successful login).
 
-    The activities are stored in a local directory on the user's computer.
-    The backups are incremental, meaning that only activities that aren't already
+    :param jwt_fgp_cookie: This is the JWT_FGP cookie to use in client
+    requests. It needs to be extracted using web browser developer tools from
+    an active Garmin Connect session (with a successful login).
+
+    :param backup_dir: Destination directory for downloaded
+    activities. Default: ./activities/".
+
+    :param export_formats: List of desired output formats (json_summary,
+    json_details, gpx, tcx, fit).  Default: `None` which means all supported
+    formats will be backed up.
+
+    :param ignore_errors: Ignore errors and keep going. Default: False.
+
+    :param max_retries: The maximum number of retries to make on failed
+    attempts to fetch an activity. Exponential backoff will be used, meaning
+    that the delay between successive attempts will double with every retry,
+    starting at one second. Default: 7.
+
+    The activities are stored in a local directory on the user's computer.  The
+    backups are incremental, meaning that only activities that aren't already
     stored in the backup directory will be downloaded.
 
     """
@@ -43,17 +56,19 @@ def incremental_backup(username: str,
     if not os.path.isdir(backup_dir):
         os.makedirs(backup_dir)
 
-    if not password:
-        password = getpass.getpass("Enter password: ")
+    if not bearer_token:
+        bearer_token = input("Enter Authorization header bearer token (extract with web browser developer tools): ")
+    if not jwt_fgp_cookie:
+        jwt_fgp_cookie = input("Enter JWT_FGP cookie value (extract with web browser developer tools): ")
 
     # set up a retryer that will handle retries of failed activity downloads
     retryer = Retryer(
         delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=1)),
         stop_strategy=MaxRetriesStopStrategy(max_retries))
 
-    with GarminClient(username, password) as client:
+    with GarminClient(bearer_token, jwt_fgp_cookie) as client:
         # get all activity ids and timestamps from Garmin account
-        log.info("scanning activities for %s ...", username)
+        log.info("scanning activities ...")
         activities = set(retryer.call(client.list_activities))
         log.info("account has a total of %d activities", len(activities))
 
