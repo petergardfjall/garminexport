@@ -7,6 +7,8 @@ backup directory will be downloaded.
 import argparse
 import logging
 import os
+from pathlib import Path
+import traceback
 
 from garminexport.backup import supported_export_formats
 from garminexport.incremental_backup import incremental_backup
@@ -15,8 +17,13 @@ from garminexport.logging_config import LOG_LEVELS
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
-DEFAULT_MAX_RETRIES = 7
+DEFAULT_MAX_RETRIES = 3
 """The default maximum number of retries to make when fetching a single activity."""
+
+DEFAULT_AUTH_TOKEN_DIR = os.path.join(Path.home(), '.garminexport')
+"""File where acquired authentication tokens are saved for later reuse.
+This often allows us to bypass the login step, which is prone to rate-limiting."""
+
 
 def parse_args() -> argparse.Namespace:
     """Parse CLI arguments.
@@ -41,6 +48,10 @@ def parse_args() -> argparse.Namespace:
         "--backup-dir", metavar="DIR", type=str,
         help="Destination directory for downloaded activities. Default: ./activities/",
         default=os.path.join(".", "activities"))
+    parser.add_argument(
+        "--auth-token-dir", metavar="DIR", type=str,
+        help=f"Directory where tokens from successful authentication are saved for later reuse. Default: {DEFAULT_AUTH_TOKEN_DIR}",
+        default=DEFAULT_AUTH_TOKEN_DIR)
     parser.add_argument(
         "--log-level", metavar="LEVEL", type=str,
         help="Desired log output level (DEBUG, INFO, WARNING, ERROR). Default: INFO.",
@@ -69,10 +80,13 @@ def main():
     try:
         incremental_backup(username=args.username,
                            password=args.password,
+                           auth_token_dir=args.auth_token_dir,
                            backup_dir=args.backup_dir,
                            export_formats=args.format,
                            ignore_errors=args.ignore_errors,
                            max_retries=args.max_retries)
 
     except Exception as e:
-        log.error("failed with exception: {}".format(e))
+        log.error(str(e))
+        if args.log_level == 'DEBUG':
+            print(traceback.format_exc())
