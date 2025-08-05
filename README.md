@@ -6,7 +6,7 @@
 # About
 
 `garminexport` is both a library and a tool for downloading/backing up
-[Garmin Connect](http://connect.garmin.com/) activities to a local disk.
+[Garmin Connect](http://connect.garmin.com/) activities to local disk.
 
 The main utility script is called `garmin-backup` and performs incremental
 backups of your Garmin account to a local directory. The first time
@@ -19,41 +19,9 @@ activities that haven't already been downloaded to the backup directory.
 `garminexport` is available on [PyPi](https://pypi.org/) and can be installed
 with [pip](http://pip.readthedocs.org).
 
-## Vanilla installation
-
-> **WARNING**
->
-> GarminConnect employs Cloudflare's bot protection to prevent scripted access
-> to their services. Therefore a vanilla installation is no longer likely to
-> work. Instead, try the
-> [Browser-impersonating installation](#browser-impersonating-installation)
-> below.
-
-To only install `garminexport` and required dependencies run:
-
 ```bash
 pip install garminexport
 ```
-
-## Browser-impersonating installation
-
-To install `garminexport` with support to circumvent Cloudflare's bot protection
-you should install the module with the `impersonate_browser`
-[extra](https://setuptools.pypa.io/en/latest/userguide/dependency_management.html#optional-dependencies)
-like so:
-
-```bash
-pip install 'garminexport[impersonate_browser]'
-```
-
-This replaces the default [requests](https://github.com/psf/requests) library
-with [curl_cffi](https://github.com/yifeikong/curl_cffi) for HTTP session
-handling.
-
-When `curl_cffi` is used, the `GARMINEXPORT_IMPERSONATE_BROWSER` environment
-variable can be used to control which browser is impersonated (default is
-`chrome110`, see
-[full list](https://github.com/lwthiker/curl-impersonate#supported-browsers)).
 
 # Usage
 
@@ -62,6 +30,22 @@ variable can be used to control which browser is impersonated (default is
 To be of any use you need to register an account at
 [Garmin Connect](http://connect.garmin.com/) and populate it with some
 activities.
+
+## Authentication
+
+Logging in with the user-supplied username and password gives `garminexport` two
+important pieces of data needed to authenticate further client requests:
+
+- An OAuth bearer token.
+- A `JWT_FGP` cookie.
+
+These are both stored under `~/.garmexport` (or the folder given by
+`--auth-token-dir`) and will be reused as long as the OAuth token has not
+expired. Only if the OAuth token has expired (normally after two hours) will a
+new login be initiated. Doing too many logins in a short period of time risks
+seeing your IP address being temporarily blocked by CloudFlare (normally
+indicated by a `429 (Too Many Requests)` response). The reuse of authentication
+tokens should make this a non-issue though.
 
 ## As a command-line tool (garmin-backup)
 
@@ -145,15 +129,9 @@ For example, in your `setup.py`, `setup.cfg`, `pyproject.toml`
 ```python
 install_requires=[
     'garminexport',
-    # also installs 'impersonate_browser as a dependency
-    # 'garminexport[impersonate_browser]',
     ...
 ]
 ```
-
-Note: if you happen to have
-[cloudscraper](https://github.com/VeNoMouS/cloudscraper) on your `PACKAGEPATH`
-`GarminClient` will make use of it whenever it needs to make an HTTP request.
 
 # Contribute
 
