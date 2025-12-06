@@ -16,5 +16,5 @@ requests==2.32.4
     # via garminexport (setup.py)
 six==1.17.0
     # via python-dateutil
-urllib3==2.5.0
+urllib3==2.6.0
     # via requests
