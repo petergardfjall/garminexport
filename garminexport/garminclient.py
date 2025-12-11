@@ -4,6 +4,7 @@ parts of the Garmin Connect REST API.
 """
 from builtins import range
 from datetime import timedelta, datetime
+from typing import Any
 import dateutil
 import dateutil.parser
 from io import BytesIO
@@ -224,8 +225,8 @@ class GarminClient(object):
         require_status(response, 200)
         return response.text
 
-    @require_session
-    def get_activity_gear(self, activity_id: int):
+    @ensure_authenticated
+    def get_activity_gear(self, activity_id: int) -> list:
         """Return a list of JSON objects describing the gear used in an activity,
         if any. If there is no gear attached, the result will be an empty list.
 
@@ -240,11 +241,7 @@ class GarminClient(object):
         )
         if response.status_code == 400:
             return None
-        if response.status_code != 200:
-            raise Exception(
-                f'failed to fetch gear for activity {activity_id}: {response.status_code}\n'
-                f'{response.text}'
-            )
+        require_status(response, 200)
         return response.json()
 
     def get_original_activity(self, activity_id: int) -> (str, str):
