@@ -37,7 +37,7 @@ As a user you only need to supply username and password to `garminexport` (you
 will also be prompted for an MFA code if your account has multi-factor
 authentication enabled). This information is handed over to the
 [garth](https://github.com/matin/garth) library which executes the same
-authentication flow of the Garmin Connect Android app to exchange your user
+authentication flow as the Garmin Connect Android app to exchange your user
 credentials for an [OAuth2](https://oauth.net/2/) token which is used to sign
 subsequent API requests.
 
