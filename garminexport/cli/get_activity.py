@@ -11,9 +11,11 @@ from datetime import timedelta
 import dateutil.parser
 
 import garminexport.backup
+from garminexport.cli.backup import DEFAULT_AUTH_TOKEN_DIR
 from garminexport.garminclient import GarminClient
 from garminexport.logging_config import LOG_LEVELS
-from garminexport.retryer import Retryer, ExponentialBackoffDelayStrategy, MaxRetriesStopStrategy
+from garminexport.retryer import (Retryer, ExponentialBackoffDelayStrategy,
+                                  MaxRetriesStopStrategy)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
@@ -21,7 +23,7 @@ log = logging.getLogger(__name__)
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Downloads one particular activity for a given Garmin Connect account.")
+        description="Downloads one particular activity.")
 
     # positional args
     parser.add_argument(
@@ -36,8 +38,12 @@ def main():
     parser.add_argument(
         "--password", type=str, help="Account password.")
     parser.add_argument(
+        "--auth-token-dir", metavar="DIR", type=str,
+        help=f"Folder where auth tokens saved. Default: {DEFAULT_AUTH_TOKEN_DIR}",
+        default=DEFAULT_AUTH_TOKEN_DIR)
+    parser.add_argument(
         "--destination", metavar="DIR", type=str,
-        help="Destination directory for downloaded activity. Default: ./activities/",
+        help="Destination folder for downloaded activity. Default: ./activities/",
         default=os.path.join(".", "activities"))
     parser.add_argument(
         "--log-level", metavar="LEVEL", type=str,
@@ -63,17 +69,21 @@ def main():
         if not args.password:
             args.password = getpass.getpass("Enter password: ")
 
-        with GarminClient(args.username, args.password) as client:
-            log.info("fetching activity %s ...", args.activity)
-            summary = client.get_activity_summary(args.activity)
-            # set up a retryer that will handle retries of failed activity downloads
-            retryer = Retryer(
-                delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=1)),
-                stop_strategy=MaxRetriesStopStrategy(5))
+        client = GarminClient(args.username, args.password, args.auth_token_dir)
+        client.connect()
 
-            start_time = dateutil.parser.parse(summary["summaryDTO"]["startTimeGMT"])
-            garminexport.backup.download(
-                client, (args.activity, start_time), retryer, args.destination, export_formats=[args.format])
+        log.info("fetching activity %s ...", args.activity)
+        summary = client.get_activity_summary(args.activity)
+        # set up a retryer that will handle retries of failed activity downloads
+        retryer = Retryer(
+            delay_strategy=ExponentialBackoffDelayStrategy(initial_delay=timedelta(seconds=1)),
+            stop_strategy=MaxRetriesStopStrategy(5))
+
+        start_time = dateutil.parser.parse(summary["summaryDTO"]["startTimeGMT"])
+        garminexport.backup.download(
+            client, (args.activity, start_time), retryer, args.destination, export_formats=[args.format])
     except Exception as e:
         log.error("failed with exception: %s", e)
         raise
+    finally:
+        client.disconnect()
