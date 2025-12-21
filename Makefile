@@ -42,7 +42,7 @@ clean:
 	rm -rf build dist garminexport.egg-info
 
 test:
-	pytest --cov=garminexport
+	pytest --cov=garminexport .
 
 ci-test:
 	pytest tests --junitxml=report.xml
