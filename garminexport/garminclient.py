@@ -16,8 +16,7 @@ import sys
 import zipfile
 
 from garminexport.authenticator import (Authenticator,
-                                        ensure_authenticated,
-                                        require_status)
+                                        ensure_authenticated)
 from garminexport.retryer import (Retryer,
                                   ExponentialBackoffDelayStrategy,
                                   MaxRetriesStopStrategy)
@@ -26,7 +25,9 @@ from garminexport.token_store import TokenStore
 
 log = logging.getLogger(__name__)
 # reduce logging noise from requests library
+logging.getLogger("oauthlib").setLevel(logging.ERROR)
 logging.getLogger("requests").setLevel(logging.ERROR)
+logging.getLogger("requests-oauthlib").setLevel(logging.ERROR)
 
 
 class GarminClient(object):
@@ -121,7 +122,7 @@ class GarminClient(object):
         log.debug("fetching activities %d through %d ...",
                   start_index, start_index + max_limit - 1)
         response = self.session.get(
-            "https://connect.garmin.com/activitylist-service/activities/search/activities",
+            "https://connectapi.garmin.com/activitylist-service/activities/search/activities",
             params={"start": start_index, "limit": max_limit})
         if response.status_code != 200:
             raise Exception(
@@ -155,7 +156,7 @@ class GarminClient(object):
 
         """
         response = self.session.get(
-            "https://connect.garmin.com/activity-service/activity/{}".
+            "https://connectapi.garmin.com/activity-service/activity/{}".
             format(activity_id))
         require_status(response, 200)
         return json.loads(response.text)
@@ -169,9 +170,8 @@ class GarminClient(object):
         :param activity_id: Activity identifier.
         :returns: The activity details as a JSON dict.
         """
-        # mounted at xml or json depending on result encoding
         response = self.session.get(
-            "https://connect.garmin.com/activity-service/activity/{}/details".
+            "https://connectapi.garmin.com/activity-service/activity/{}/details".
             format(activity_id))
         require_status(response, 200)
         return json.loads(response.text)
@@ -188,12 +188,8 @@ class GarminClient(object):
           or ``None`` if the activity couldn't be exported to GPX.
         """
         response = self.session.get(
-            "https://connect.garmin.com/download-service/export/gpx/activity/{}"
+            "https://connectapi.garmin.com/download-service/export/gpx/activity/{}"
             .format(activity_id))
-        # An alternate URL that seems to produce the same results
-        # and is the one used when exporting through the Garmin
-        # Connect web page.
-        # response = self.session.get("https://connect.garmin.com/proxy/activity-service-1.1/gpx/activity/{}?full=true".format(activity_id))
 
         # A 404 (Not Found) or 204 (No Content) response are both indicators
         # of a gpx file not being available for the activity. It may, for
@@ -217,7 +213,7 @@ class GarminClient(object):
         """
 
         response = self.session.get(
-            "https://connect.garmin.com/download-service/export/tcx/activity/{}"
+            "https://connectapi.garmin.com/download-service/export/tcx/activity/{}"
             .format(activity_id))
         if response.status_code == 404:
             return None
@@ -235,7 +231,7 @@ class GarminClient(object):
           its contents, or :obj:`(None,None)` if no file is found.
         """
         response = self.session.get(
-            "https://connect.garmin.com/download-service/files/activity/{}"
+            "https://connectapi.garmin.com/download-service/files/activity/{}"
             .format(activity_id))
         # A 404 (Not Found) response is a clear indicator of a missing .fit
         # file. As of lately, the endpoint appears to have started to
@@ -285,7 +281,7 @@ class GarminClient(object):
         :returns: Garmin's internalId for the newly-created activity, or
           :obj:`None` if upload is still processing.
         """
-        response = self.session.get("https://connect.garmin.com/proxy/activity-service/activity/status/{}/{}?_={}".format(
+        response = self.session.get("https://connectapi.garmin.com/proxy/activity-service/activity/status/{}/{}?_={}".format(
             creation_date[:10], uuid.replace("-",""), int(datetime.now().timestamp() * 1000)), headers={"nk": "NT"})
         if response.status_code == 201 and response.headers["location"]:
             # location should be https://connectapi.garmin.com/activity-service/activity/ACTIVITY_ID
@@ -324,8 +320,8 @@ class GarminClient(object):
 
         # upload it
         files = dict(data=(fn, file))
-        response = self.session.post("https://connect.garmin.com/proxy/upload-service/upload/.{}".format(format),
-                                     files=files, headers={"nk": "NT"})
+        response = self.session.post("https://connectapi.garmin.com/proxy/upload-service/upload/.{}".format(format),
+                                     files=files, headers={"nk": "NT"}) # TODO redundant?
 
         # check response and get activity ID
         try:
@@ -377,10 +373,18 @@ class GarminClient(object):
             data['activityId'] = activity_id
             encoding_headers = {"Content-Type": "application/json; charset=UTF-8"}  # see Tapiriik
             response = self.session.put(
-                "https://connect.garmin.com/proxy/activity-service/activity/{}".format(activity_id),
+                "https://connectapi.garmin.com/proxy/activity-service/activity/{}".format(activity_id),
                 data=json.dumps(data), headers=encoding_headers)
             if response.status_code != 204:
                 raise Exception(u"failed to set metadata for activity {}: {}\n{}".format(
                     activity_id, response.status_code, response.text))
 
         return activity_id
+
+
+def require_status(resp: requests.Response, want_code: int):
+    """Raises an error unless the response has a given HTTP status code."""
+    if resp.status_code != want_code:
+        raise ValueError(
+            f'{resp.request.method} {resp.request.url} '
+            f'gave {resp.status_code} (wanted {want_code}): {resp.text}')

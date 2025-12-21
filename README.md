@@ -33,19 +33,17 @@ activities.
 
 ## Authentication
 
-Logging in with the user-supplied username and password gives `garminexport` two
-important pieces of data needed to authenticate further client requests:
+As a user you only need to supply username and password to `garminexport` (you
+will also be prompted for a MFA code if your account has multi-factor
+authentication enabled). This information is handed over to the
+[garth](https://github.com/matin/garth) library which executes the same
+authentication flow of the Garmin Connect Android app to exchange your user
+credentials for an [OAuth2](https://oauth.net/2/) token which is used to sign
+subsequent API requests.
 
-- An OAuth bearer token.
-- A `JWT_FGP` cookie.
-
-These are both stored under `~/.garmexport` (or the folder given by
-`--auth-token-dir`) and will be reused as long as the OAuth token has not
-expired. Only if the OAuth token has expired (normally after two hours) will a
-new login be initiated. Doing too many logins in a short period of time risks
-seeing your IP address being temporarily blocked by CloudFlare (normally
-indicated by a `429 (Too Many Requests)` response). The reuse of authentication
-tokens should make this a non-issue though.
+The oauth2 token is stored under `~/.garminexport` (or the folder given by
+`--auth-token-dir`) and will be reused as long as the token has not expired.
+Only if the OAuth token has expired will a new login be initiated.
 
 ## As a command-line tool (garmin-backup)
 
@@ -138,11 +136,13 @@ install_requires=[
 To start working on the code, create a virtual environment (an isolated
 development environment) and install the required dependencies like so:
 
-    # create virtualenv and populate it with library dependencies
-    make dev-init
+```bash
+# create virtualenv and populate it with library dependencies
+make dev-init
 
-    # activate virtualenv
-    source .venv/bin/activate
+# activate virtualenv
+source .venv/bin/activate
 
-    # test
-    make test
+# test
+make test
+```

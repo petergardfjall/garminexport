@@ -4,17 +4,39 @@
 #
 #    pip-compile --output-file=requirements.txt
 #
-certifi==2025.8.3
+annotated-types==0.7.0
+    # via pydantic
+certifi==2025.11.12
     # via requests
-charset-normalizer==3.4.3
+charset-normalizer==3.4.4
     # via requests
-idna==3.10
+garth==0.5.19
+    # via garminexport (setup.py)
+idna==3.11
     # via requests
+oauthlib==3.3.1
+    # via requests-oauthlib
+pydantic==2.12.5
+    # via garth
+pydantic-core==2.41.5
+    # via pydantic
 python-dateutil==2.9.0.post0
     # via garminexport (setup.py)
-requests==2.32.4
-    # via garminexport (setup.py)
+requests==2.32.5
+    # via
+    #   garminexport (setup.py)
+    #   garth
+    #   requests-oauthlib
+requests-oauthlib==2.0.0
+    # via garth
 six==1.17.0
     # via python-dateutil
-urllib3==2.5.0
+typing-extensions==4.15.0
+    # via
+    #   pydantic
+    #   pydantic-core
+    #   typing-inspection
+typing-inspection==0.4.2
+    # via pydantic
+urllib3==2.6.2
     # via requests

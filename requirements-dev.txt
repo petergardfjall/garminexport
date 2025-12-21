@@ -4,20 +4,30 @@
 #
 #    pip-compile --extra=test --output-file=requirements-dev.txt
 #
-certifi==2025.8.3
+annotated-types==0.7.0
+    # via pydantic
+certifi==2025.11.12
     # via requests
-charset-normalizer==3.4.3
+charset-normalizer==3.4.4
     # via requests
-coverage[toml]==7.10.4
+coverage[toml]==7.13.0
     # via pytest-cov
-idna==3.10
+garth==0.5.19
+    # via garminexport (setup.py)
+idna==3.11
     # via requests
-iniconfig==2.1.0
+iniconfig==2.3.0
     # via pytest
+oauthlib==3.3.1
+    # via requests-oauthlib
 packaging==25.0
     # via pytest
 pluggy==1.6.0
     # via pytest
+pydantic==2.12.5
+    # via garth
+pydantic-core==2.41.5
+    # via pydantic
 pytest==7.4.4
     # via
     #   garminexport (setup.py)
@@ -26,9 +36,21 @@ pytest-cov==4.1.0
     # via garminexport (setup.py)
 python-dateutil==2.9.0.post0
     # via garminexport (setup.py)
-requests==2.32.4
-    # via garminexport (setup.py)
+requests==2.32.5
+    # via
+    #   garminexport (setup.py)
+    #   garth
+    #   requests-oauthlib
+requests-oauthlib==2.0.0
+    # via garth
 six==1.17.0
     # via python-dateutil
-urllib3==2.5.0
+typing-extensions==4.15.0
+    # via
+    #   pydantic
+    #   pydantic-core
+    #   typing-inspection
+typing-inspection==0.4.2
+    # via pydantic
+urllib3==2.6.2
     # via requests

@@ -75,7 +75,7 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     args = parse_args()
-    logging.root.setLevel(LOG_LEVELS[args.log_level])
+    logging.root.setLevel(LOG_LEVELS[args.log_level.upper()])
 
     try:
         incremental_backup(username=args.username,
