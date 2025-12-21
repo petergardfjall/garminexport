@@ -63,8 +63,6 @@ class Authenticator(object):
         # If the token is close to expiry we need to refresh it.
         oauth2_token = self._ensure_fresh(oauth2_token)
 
-        # TODO: could also get session directly from garth?
-
         # Prepare an authenticated session with headers.
         authenticated_session = requests.Session()
         authenticated_session.headers.update({
