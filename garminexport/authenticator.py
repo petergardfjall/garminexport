@@ -1,5 +1,4 @@
 from collections.abc import Callable
-import garth
 import logging
 from functools import wraps
 import requests
@@ -55,7 +54,6 @@ class Authenticator(object):
         self.username = username
         self.password = password
         self.mfa_code_prompt = mfa_code_prompt
-        self.auth_client = garth.Client()
 
     def ensure_authenticated_session(self) -> Session:
         """Returns a Session prepared with authentication headers."""
@@ -91,16 +89,18 @@ class Authenticator(object):
         # Refresh auth token and save in token store.
         log.debug("refreshing oauth2 token (expires in %.1fs) ...",
                   time_to_expiry(token))
-        self.auth_client.refresh_oauth2()
+        self.token_store.auth_client.refresh_oauth2()
         log.debug("saving refreshed oauth token ...")
         self._save_tokens(
-            self.auth_client.oauth1_token, self.auth_client.oauth2_token)
-        return self.auth_client.oauth2_token
+            self.token_store.auth_client.oauth1_token,
+            self.token_store.auth_client.oauth2_token
+        )
+        return self.token_store.auth_client.oauth2_token
 
     def _acquire_tokens(self) -> (OAuth1Token, OAuth2Token):
         """Perform full login to acquire both OAuth1Token and OAuth2Token."""
         log.debug("acquiring authentication token ...")
-        oauth1_token, oauth2_token = self.auth_client.login(
+        oauth1_token, oauth2_token = self.token_store.auth_client.login(
             self.username, self.password, prompt_mfa=self.mfa_code_prompt)
         return oauth1_token, oauth2_token
 
