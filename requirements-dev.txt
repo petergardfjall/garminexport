@@ -6,13 +6,13 @@
 #
 annotated-types==0.7.0
     # via pydantic
-certifi==2025.11.12
+certifi==2026.1.4
     # via requests
 charset-normalizer==3.4.4
     # via requests
-coverage[toml]==7.13.0
+coverage[toml]==7.13.1
     # via pytest-cov
-garth==0.5.19
+garth==0.5.21
     # via garminexport (setup.py)
 idna==3.11
     # via requests
@@ -52,5 +52,5 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic
-urllib3==2.6.2
+urllib3==2.6.3
     # via requests
