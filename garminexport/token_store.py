@@ -28,7 +28,16 @@ class TokenStore(object):
             return False
         return not oauth2_token.refresh_expired
 
+    def get_oauth1_token(self) -> OAuth1Token:
+        """Returns the saved OAuth1Token or throws an exception on failure to
+        do so."""
+        if self.auth_client.oauth1_token is None:
+            self.auth_client.load(self.folder)
+        return self.auth_client.oauth1_token
+
     def get_oauth2_token(self) -> OAuth2Token:
+        """Returns the saved OAuth2Token or throws an exception on failure to
+        do so."""
         if self.auth_client.oauth2_token is None:
             self.auth_client.load(self.folder)
         return self.auth_client.oauth2_token
