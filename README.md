@@ -5,6 +5,14 @@
 
 # About
 
+> [!NOTE]
+> **garminexport is no longer actively maintained**. I neither have time nor
+> motivation to keep battling to circumvent Garmin's bot protection.
+>
+> The last attempt made use of an upstream library
+> ([garth](https://github.com/matin/garth/)) to handle
+> authentication. Unfortunately that project is no longer maintained.
+
 `garminexport` is both a library and a tool for downloading/backing up
 [Garmin Connect](http://connect.garmin.com/) activities to local disk.
 
