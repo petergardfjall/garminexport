@@ -4,6 +4,7 @@ parts of the Garmin Connect REST API.
 """
 from builtins import range
 from datetime import timedelta, datetime
+from typing import Any
 import dateutil
 import dateutil.parser
 from io import BytesIO
@@ -219,6 +220,25 @@ class GarminClient(object):
             return None
         require_status(response, 200)
         return response.text
+
+    @ensure_authenticated
+    def get_activity_gear(self, activity_id: int) -> list:
+        """Return a list of JSON objects describing the gear used in an activity,
+        if any. If there is no gear attached, the result will be an empty list.
+
+        :param activity_id: Activity identifier.
+        :type activity_id: int
+        :returns: The JSON object describing the gear or ``None`` if there is
+         no gear attached
+        :rtype list
+        """
+        response = self.session.get(
+            f'https://connect.garmin.com/gear-service/gear/filterGear?activityId={activity_id}',
+        )
+        if response.status_code == 400:
+            return None
+        require_status(response, 200)
+        return response.json()
 
     def get_original_activity(self, activity_id: int) -> (str, str):
         """Return the original file that was uploaded for an activity.
